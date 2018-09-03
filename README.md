@@ -10,7 +10,7 @@ A set of matmul operations for testing CUDA Tensor Core performance
 make
 
 # run
-./prog <dev> <nmats> <alg> <prec>
+./prog \<dev\> \<nmats\> \<alg\> \<prec\>
 - dev: GPU id (0, 1, 2...)
 - nmats: number of 16x16 matrices stores linearly and consecutively.
 - alg:   
