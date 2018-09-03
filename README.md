@@ -7,7 +7,7 @@ A set of matmul operations for testing CUDA Tensor Core performance
 - Linux
 
 # compile
-make
+make volta
 
 # run
 ./prog \<dev\> \<nmats\> \<alg\> \<prec\>
