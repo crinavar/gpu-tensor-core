@@ -76,21 +76,7 @@ __global__ void matmuls_tc_block(half* A, half* B, REAL *C, int n){
     int off = blockIdx.x * TCSQ * 8;
     int ltid = threadIdx.y*TCSIZE + threadIdx.x;
     int woff = (ltid >> 5) << 8;
-    /*
-    __shared__ half As[8*TCSQ];
-    __shared__ half Bs[8*TCSQ];
-    int ltid = threadIdx.y*TCSIZE + threadIdx.x;
-    //int woff = (ltid >> 5)*TCSQ;
-    int woff = (ltid >> 5) << 8;
-    // (1) cargar datos de global mem a cache
-    #pragma unroll
-    for(int i=0; i<8; ++i){
-        As[TCSQ*i + ltid] = A[off + i*TCSQ + ltid];
-        Bs[TCSQ*i + ltid] = B[off + i*TCSQ + ltid];
-    }
-    // (2) sync
-    __syncthreads();
-    */
+    //int woff = (ltid/32) * 256;
 
     // solo el primer warp trabajara, de ocho warps
     wmma::fragment<wmma::matrix_a, WMMA_M, WMMA_N, WMMA_K, half, wmma::row_major> a_frag;
@@ -98,8 +84,6 @@ __global__ void matmuls_tc_block(half* A, half* B, REAL *C, int n){
     wmma::fragment<wmma::accumulator, WMMA_M, WMMA_N, WMMA_K, REAL> c_frag;
 
     // (3) cargar datos de memoria global a A, B y C frags
-    //wmma::load_matrix_sync(a_frag, As + woff, TCSIZE);
-    //wmma::load_matrix_sync(b_frag, Bs + woff, TCSIZE);
     wmma::load_matrix_sync(a_frag, A + off + woff, TCSIZE);
     wmma::load_matrix_sync(b_frag, B + off + woff, TCSIZE);
     wmma::fill_fragment(c_frag, 0.0f);
@@ -142,5 +126,37 @@ __global__ void matmuls_tc_block_sm(half* A, half* B, REAL *C, int n){
 
     // (5) guardar datos de vuelta en memorial global
     wmma::store_matrix_sync(C + off + woff, c_frag, TCSIZE, wmma::mem_row_major);
+}
+
+__global__ void matmuls_basic_half(half* A, half* B, REAL* C, int n){
+    int off = blockIdx.x * (TCSIZE*TCSIZE);
+    int tid = off + (threadIdx.y*TCSIZE + threadIdx.x);
+    half sum = 0.0f;
+    for(int i=0; i<TCSIZE; ++i){
+        sum += __hmul(A[off + threadIdx.y*TCSIZE + i],B[off + i*TCSIZE + threadIdx.x]);
+        //C[tid] += __hmul(A[off + threadIdx.y*TCSIZE + i],B[off + i*TCSIZE + threadIdx.x]);
+    }
+    C[tid] = (float)sum;
+}
+
+__global__ void matmuls_sm_half(half* A, half* B, REAL *C, int n){
+    __shared__ half As[TCSIZE*TCSIZE];
+    __shared__ half Bs[TCSIZE*TCSIZE];
+    __shared__ half Cs[TCSIZE*TCSIZE];
+    int off = blockIdx.x * (TCSIZE*TCSIZE);
+    int ltid = threadIdx.y*TCSIZE + threadIdx.x;
+    // (1) cargar datos de global mem a cache
+    As[ltid] = A[off + ltid];
+    Bs[ltid] = B[off + ltid];
+    Cs[ltid] = 0.0f;
+    // (2) sync
+    __syncthreads();
+    // (3) hacer multiplicacion usando As, Bs, Cs 
+    #pragma unroll
+    for(int i=0; i<TCSIZE; ++i){
+        Cs[ltid] += As[threadIdx.y*TCSIZE + i]*Bs[i*TCSIZE + threadIdx.x];
+    }
+    // (4) copiar Cs a memoria global.
+    C[off + ltid] = (float)Cs[ltid];
 }
 #endif

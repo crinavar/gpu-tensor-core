@@ -89,7 +89,7 @@ int main(int argc, char **argv){
     // mallocs
     REAL *A,  *B,  *C;
     REAL *Ad, *Bd, *Cd;
-    half *Adh, *Bdh;
+    half *Adh, *Bdh, *Cdh;
 
     printf("CPU mallocs (A[], B[], C[])......."); fflush(stdout);
     timer_start(&start, &stop);
@@ -105,6 +105,7 @@ int main(int argc, char **argv){
     cudaMalloc(&Cd, sizeof(REAL)*totaln);
     cudaMalloc(&Adh, sizeof(half)*totaln);
     cudaMalloc(&Bdh, sizeof(half)*totaln);
+    cudaMalloc(&Cdh, sizeof(half)*totaln);
     timer_stop(&start, &stop, "done");
 
     // init data 
@@ -127,6 +128,7 @@ int main(int argc, char **argv){
     // convert to half
     convertFp32ToFp16 <<< (totaln + 255)/256, 256 >>> (Adh, Ad, totaln);
     convertFp32ToFp16 <<< (totaln + 255)/256, 256 >>> (Bdh, Bd, totaln);
+    convertFp32ToFp16 <<< (totaln + 255)/256, 256 >>> (Cdh, Cd, totaln);
 
     // parallel structures
     dim3 block, grid;
@@ -149,7 +151,8 @@ int main(int argc, char **argv){
     else if(alg == 2){
         printf("\033[32;1m[matmul tc 16x2-blocks]\033[0m...........");
         block = dim3(TCSIZE, 2, 1);    
-        grid = dim3((totaln+TCSQ-1)/TCSQ, 1, 1);    
+        //grid = dim3((totaln+TCSQ-1)/TCSQ, 1, 1);    
+        grid = dim3(nmats, 1, 1);    
         timer_start(&start, &stop);
         matmuls_tc<<<grid, block>>>(Adh, Bdh, Cd, totaln);
     }
@@ -166,6 +169,20 @@ int main(int argc, char **argv){
         grid = dim3((totaln+8*TCSQ-1)/(8*TCSQ), 1, 1);    
         timer_start(&start, &stop);
         matmuls_tc_block_sm<<<grid, block>>>(Adh, Bdh, Cd, totaln);
+    }
+    else if(alg == 5){
+        printf("\033[32;1m[matmul half]\033[0m..........");
+        block = dim3(TCSIZE, TCSIZE, 1);
+        grid = dim3((totaln+TCSQ-1)/TCSQ, 1, 1);
+        timer_start(&start, &stop);
+        matmuls_basic_half<<<grid, block>>>(Adh, Bdh, Cd, totaln);
+    }
+    else if(alg == 6){
+        printf("\033[32;1m[matmul half]\033[0m..........");
+        block = dim3(TCSIZE, TCSIZE, 1);
+        grid = dim3((totaln+TCSQ-1)/TCSQ, 1, 1);
+        timer_start(&start, &stop);
+        matmuls_sm_half<<<grid, block>>>(Adh, Bdh, Cd, totaln);
     }
     else{
         printf("error: choose 0, 1, 2 for method\n");
