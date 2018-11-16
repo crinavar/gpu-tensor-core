@@ -13,26 +13,40 @@ __global__ void convertFp32ToFp16 (half *out, float *in, int n) {
         out[idx] = in[idx];
     }
 }
+__global__ void convertFp16ToFp32 (float *out, half *in, int n) {
+    int idx = blockDim.x * blockIdx.x + threadIdx.x;
+    if (idx < n) {
+        out[idx] = in[idx];
+    }
+}
 
 // kernel
-__global__ void warpReduceSumTC(half* A, REAL* C, int n){
+__global__ void tc_reduction(half* A, int n){
     int off = blockIdx.x * TCSQ;
 
-    // solo el primer warp trabajara, de ocho warps
+    // (1) el unico warp del bloque trabajara
     wmma::fragment<wmma::matrix_a, WMMA_M, WMMA_N, WMMA_K, half, wmma::row_major> a_frag;
     wmma::fragment<wmma::matrix_b, WMMA_M, WMMA_N, WMMA_K, half, wmma::row_major> b_frag;
-    wmma::fragment<wmma::accumulator, WMMA_M, WMMA_N, WMMA_K, REAL> c_frag;
+    wmma::fragment<wmma::accumulator, WMMA_M, WMMA_N, WMMA_K, half> c_frag;
+    wmma::fragment<wmma::accumulator, WMMA_M, WMMA_N, WMMA_K, half> d_frag;
     
-
-    // (3) cargar datos de memoria global a A, B y C frags
+    // (2) cargar datos de memoria global a A, B y C frags
     wmma::load_matrix_sync(a_frag, A + off, TCSIZE);
     wmma::fill_fragment(b_frag, 1.0f);
     wmma::fill_fragment(c_frag, 0.0f);
 
-    // (4) operacion matrix-multiply-accumulate (MMA)
-    wmma::mma_sync(c_frag, a_frag, b_frag, c_frag);
+    // (3) operacion matrix-multiply-accumulate (MMA)
+    wmma::mma_sync(d_frag, a_frag, b_frag, c_frag);
+
+    // (4) preparando datos para segundo MMA
+    for(int i=0; i<d_frag.num_elements; ++i){
+        a_frag.x[i] = d_frag.x[i];
+    }
+    wmma::mma_sync(d_frag, a_frag, b_frag, c_frag);
 
     // (5) guardar datos de vuelta en memorial global
-    wmma::store_matrix_sync(C + off, c_frag, TCSIZE, wmma::mem_row_major);
+    //A[blockIdx.x] = d_frag.x[0];
+    //printf("thread (%i, %i, %i)    valor es %f\n", threadIdx.x, threadIdx.y, threadIdx.z, (float)A[blockIdx.x]);
+    wmma::store_matrix_sync(A + off, d_frag, TCSIZE, wmma::mem_row_major);
 }
 #endif

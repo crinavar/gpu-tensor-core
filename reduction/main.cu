@@ -14,7 +14,7 @@ void initmat(REAL *m, int nmats, const int val){
         int off = k*TCSIZE*TCSIZE;
         for(int i=0; i<TCSIZE; ++i){
             for(int j=0; j<TCSIZE; ++j){
-                m[off + i*TCSIZE + j] = (val*(k+1));
+                m[off + i*TCSIZE + j] = (val*(k+1) + i);
             }
         }
     }
@@ -49,51 +49,35 @@ int main(int argc, char **argv){
     cudaSetDevice(dev);
 
     // mallocs
-    REAL *A,  *C;
-    REAL *Ad, *Cd;
+    REAL *A;
+    REAL *Ad;
     half *Adh;
 
     A = (REAL*)malloc(sizeof(REAL)*totaln);
-    C = (REAL*)malloc(sizeof(REAL)*totaln);
-
     cudaMalloc(&Ad, sizeof(REAL)*totaln);
-    cudaMalloc(&Cd, sizeof(REAL)*totaln);
-
     cudaMalloc(&Adh, sizeof(half)*totaln);
 
     initmat(A, nmats, 1);
-    initmat(C, nmats, 0);
 
     cudaMemcpy(Ad, A, sizeof(REAL)*totaln, cudaMemcpyHostToDevice);
-    cudaMemcpy(Cd, C, sizeof(REAL)*totaln, cudaMemcpyHostToDevice);
-
     convertFp32ToFp16 <<< (totaln + 255)/256, 256 >>> (Adh, Ad, totaln);
 
     dim3 block, grid;
-
-    block = dim3(TCSIZE, 2, 1);
+    block = dim3(TCSIZE*2, 1, 1);
     grid = dim3(nmats, 1, 1);
-    warpReduceSumTC<<<grid, block>>>(Adh, Cd, totaln);
-    convertFp32ToFp16 <<< (totaln + 255)/256, 256 >>> (Adh, Cd, totaln);
-    warpReduceSumTC<<<grid, block>>>(Adh, Cd, totaln);
-
+    printf("grid (%i, %i, %i)    block(%i, %i, %i)\n", grid.x, grid.y, grid.z, block.x, block.y, block.z);
+    tc_reduction<<<grid, block>>>(Adh, totaln);
     cudaDeviceSynchronize();
-  
+    convertFp16ToFp32 <<< (totaln + 255)/256, 256 >>> (Ad, Adh, totaln);
     cudaMemcpy(A, Ad, sizeof(REAL)*totaln, cudaMemcpyDeviceToHost);
-    cudaMemcpy(C, Cd, sizeof(REAL)*totaln, cudaMemcpyDeviceToHost);
 
     if(nmats < PRINTLIMIT){
         printmats(A, nmats, "[after] mat A:");
-        printmats(C, nmats, "[after] mat C:");
     }
 
     free(A);
-    free(C);
-
     cudaFree(Ad);
-    cudaFree(Cd);
     cudaFree(Adh);
-
     exit(EXIT_SUCCESS);
 }
 
