@@ -69,16 +69,15 @@ void timer_stop(cudaEvent_t *start, cudaEvent_t *stop, const char *msg){
 // main
 int main(int argc, char **argv){
     // params
-    if(argc != 5){
-        fprintf(stderr, "run as ./prog dev nmats alg mode\n");
+    if(argc != 4){
+        fprintf(stderr, "run as ./prog dev nmats alg\n");
         exit(EXIT_FAILURE);
     }
     int dev = atoi(argv[1]);
     int nmats = atoi(argv[2]);
     int alg = atoi(argv[3]);
     int totaln = nmats*(TCSIZE)*(TCSIZE);
-    int mode = atoi(argv[4]);
-    printf("alg = %i  mode = %s nmats=%i  dev=%i   TCSIZE=%i  totaln=%i\n", alg, mode == 0? "FP16": "FP32", nmats, dev, TCSIZE, totaln);
+    printf("alg = %i  nmats=%i  dev=%i   TCSIZE=%i  totaln=%i\n", alg, nmats, dev, TCSIZE, totaln);
     
     // set device
     cudaSetDevice(dev);
@@ -171,21 +170,21 @@ int main(int argc, char **argv){
         matmuls_tc_block_sm<<<grid, block>>>(Adh, Bdh, Cd, totaln);
     }
     else if(alg == 5){
-        printf("\033[32;1m[matmul half]\033[0m..........");
+        printf("\033[32;1m[matmul basic half]\033[0m..........");
         block = dim3(TCSIZE, TCSIZE, 1);
         grid = dim3((totaln+TCSQ-1)/TCSQ, 1, 1);
         timer_start(&start, &stop);
         matmuls_basic_half<<<grid, block>>>(Adh, Bdh, Cd, totaln);
     }
     else if(alg == 6){
-        printf("\033[32;1m[matmul half]\033[0m..........");
+        printf("\033[32;1m[matmul sm half]\033[0m..........");
         block = dim3(TCSIZE, TCSIZE, 1);
         grid = dim3((totaln+TCSQ-1)/TCSQ, 1, 1);
         timer_start(&start, &stop);
         matmuls_sm_half<<<grid, block>>>(Adh, Bdh, Cd, totaln);
     }
     else{
-        printf("error: choose 0, 1, 2 for method\n");
+        printf("error: choose 0..6 for method\n");
         exit(EXIT_FAILURE);
     }
     cudaDeviceSynchronize();
