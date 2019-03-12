@@ -9,7 +9,7 @@ A set of matmul operations for testing CUDA Tensor Core performance
 # compile
 make volta
 
-# run
+# for MATMUL: run
 ./prog \<dev\> \<nmats\> \<alg\> \<prec\>
 - \<dev\>: GPU id (0, 1, 2...)
 - \<nmats\>: number of 16x16 matrices stored linearly and consecutively.
@@ -22,3 +22,6 @@ make volta
 - \<mode\>: 
     - 0: FP16 input matrices
     - 1: FP32 input matrices (tensor-core algorithms cast to FP16 inside kernel)
+
+# for REDUCTION
+TODO
