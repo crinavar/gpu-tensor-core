@@ -125,7 +125,7 @@ int main(int argc, char **argv){
     float time = 0;
     cudaEventElapsedTime(&time, start, stop);
     printf("time: %f secs\n", time/1000.0f);
-    printf("%f Billion ops/sec\n", n/(time * 1000000.0f));
+    printf("%f Billion elems/sec\n", n/(time * 1000000.0f));
 
     convertFp16ToFp32 <<< (n + 255)/256, 256 >>> (Ad, Adh, n);
     cudaMemcpy(A, Ad, sizeof(REAL)*n, cudaMemcpyDeviceToHost);
