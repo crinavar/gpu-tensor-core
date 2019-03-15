@@ -31,12 +31,12 @@ __inline__ __device__ REAL shuffle_reduction(REAL val){
 __inline__ __device__ REAL tc_reduction(half *A, int offset, int lane){
     // definicion de offset y fragmentos
     wmma::fragment<wmma::matrix_a, WMMA_M, WMMA_N, WMMA_K, half, wmma::row_major> a_frag;
-    wmma::fragment<wmma::matrix_b, WMMA_M, WMMA_N, WMMA_K, half, wmma::row_major> b_frag;
+    wmma::fragment<wmma::matrix_b, WMMA_M, WMMA_N, WMMA_K, half, wmma::col_major> b_frag;
     wmma::fragment<wmma::accumulator, WMMA_M, WMMA_N, WMMA_K, half> d_frag;
     
     // (1) cargar datos de memoria global a A, B y C frags
     wmma::fill_fragment(a_frag, 1.0f);
-    wmma::fill_fragment(b_frag, 0.0f);
+    //wmma::fill_fragment(b_frag, 0.0f);
     wmma::fill_fragment(d_frag, 0.0f);
     wmma::load_matrix_sync(b_frag, A + offset, TCSIZE);
 
@@ -68,7 +68,7 @@ __inline__ __device__ REAL tc_reduction(half *A, int offset, int lane){
 }
 
 __inline__ __device__ float block_reduce(half *a, int offset){
-	static __shared__ REAL shared[WARPSIZE];               //se puede half?????
+	static __shared__ REAL shared[WARPSIZE];
 	int tid = threadIdx.x;
 	int lane = tid & (WARPSIZE-1);
 	int wid = tid/WARPSIZE;
@@ -94,7 +94,7 @@ __inline__ __device__ float block_reduce(half *a, int offset){
 
 __global__ void kernel_reduction(half *a, float *out, int N){
 	//int tid = blockIdx.x * TCSQ;       
-	int offset = blockIdx.x * (32*TCSQ);       
+	int offset = blockIdx.x * (NUM_WARPS*TCSQ);       
     //int tid = blockIdx.x * blockDim.x + threadIdx.x;
 	//if(tid < N){
 	if(offset < N){

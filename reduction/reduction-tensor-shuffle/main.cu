@@ -9,6 +9,7 @@
 #define PRINTLIMIT 2560
 #define REPEATS 10000
 #define WARPSIZE 32
+#define NUM_WARPS 32
 #include "kernel.cuh"
 
 void init(REAL *m, long n, const int val, int seed){
@@ -17,6 +18,7 @@ void init(REAL *m, long n, const int val, int seed){
         //m[k] = 0.001f;
         //m[k] = (REAL) rand()/((REAL)RAND_MAX)
         m[k] = 1.000f;
+        ///m[k] = 0.000f;
     }
 }
 
@@ -88,8 +90,8 @@ int main(int argc, char **argv){
     dim3 block, grid;
     //block = dim3(TCSIZE*2, 1, 1);
     //grid = dim3((n + 256 - 1)/TCSQ, 1, 1);
-    block = dim3(TCSIZE*2*32, 1, 1);
-    grid = dim3((n + (TCSQ*32) - 1)/(TCSQ*32), 1, 1);
+    block = dim3(TCSIZE*2*NUM_WARPS, 1, 1);
+    grid = dim3((n + (TCSQ*NUM_WARPS) - 1)/(TCSQ*NUM_WARPS), 1, 1);
     printf("grid (%i, %i, %i)    block(%i, %i, %i)\n", grid.x, grid.y, grid.z, block.x, block.y, block.z);
    
     cudaEvent_t start, stop;
@@ -122,8 +124,8 @@ int main(int argc, char **argv){
 
     float time = 0;
     cudaEventElapsedTime(&time, start, stop);
-    printf("time: %f \n", time/1000.0f);
-    //printf("%f \n", time/(REPEATS*1000.0f));
+    printf("time: %f secs\n", time/1000.0f);
+    printf("%f Billion ops/sec\n", n/(time * 1000000.0f));
 
     convertFp16ToFp32 <<< (n + 255)/256, 256 >>> (Ad, Adh, n);
     cudaMemcpy(A, Ad, sizeof(REAL)*n, cudaMemcpyDeviceToHost);
