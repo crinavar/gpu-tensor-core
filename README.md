@@ -24,4 +24,7 @@ make volta
     - 1: FP32 input matrices (tensor-core algorithms cast to FP16 inside kernel)
 
 # for REDUCTION
+./prog \<dev> \<n> \<factor_ns> \<seed> \<REPEATS> \<method>
+- \<dev\>: GPU id (0, 1, 2...)
+
 TODO
