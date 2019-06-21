@@ -116,7 +116,8 @@ int main(int argc, char **argv){
     cudaEventRecord(start);
     
     if(method == 1){
-        printf("reduction_tc_theory (cooperative groups)\n");
+        if(n<=524288){
+        //printf("reduction_tc_theory (cooperative groups)\n");
         void *kernelArgs[3];
         kernelArgs[0]= (void*)&Adh;
         kernelArgs[1]= (void*)&outd_m0;
@@ -154,6 +155,17 @@ int main(int argc, char **argv){
         //cudaMemcpy(Ad, A, sizeof(REAL)*n, cudaMemcpyDeviceToHost);    
         //printf("D: %f\n",(float)A[0]);
     */
+        }
+        else{
+            printf("0,0,0,0,0\n");
+            free(A);
+            free(out);
+            cudaFree(Ad);
+            cudaFree(Adh);
+            cudaFree(outd);
+            //*out = 0.0f;
+            exit(EXIT_SUCCESS);
+        }
     }
     if(method == 2){
         //printf("reduction_tc_blockshuffle\n");

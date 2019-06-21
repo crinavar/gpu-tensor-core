@@ -139,15 +139,15 @@ __global__ void kernel_reduction_tc_mixed(half *a, float *out, int bntc, int bns
 }
 
 __global__ void kernel_reduction_tc_theory(half* A, half* outd_m0, int n){
+    __shared__ half lastmat[256];
     grid_group grid = this_grid();
-    //grid.sync();
 
     int wid = threadIdx.x/32;
+    //int wlane = threadIdx.x % 32;
     int offset = blockIdx.x*BSIZE + wid*32;
     // revisar aux     offset bloque  (BSIZE/WSIZE)*TCSQ*blockIdx.x    +   wid
     //int aux = wid+((BSIZE/TCSQ)*blockIdx.x*8);
     int aux = (BSIZE/WARPSIZE)*blockIdx.x + wid;
-    //static __shared__ float num;
     
     wmma::fragment<wmma::matrix_a, WMMA_M, WMMA_N, WMMA_K, half, wmma::row_major> a_frag;
     wmma::fragment<wmma::matrix_b, WMMA_M, WMMA_N, WMMA_K, half, wmma::row_major> b_frag;
@@ -180,18 +180,57 @@ __global__ void kernel_reduction_tc_theory(half* A, half* outd_m0, int n){
         }
     }
     n = (n+255)/(256);
+    int id = blockIdx.x*BSIZE + threadIdx.x;
+    int gwid = id/WARPSIZE;
+    int lastmat_pos = (n/256)*256;
     grid.sync();
+    //if(id == 0) printf("here\n"); 
 
     while(n>=256){
         // (1) cargar datos de memoria global a A, B y C frags
         wmma::fill_fragment(a_frag, 1.0f);
-        //wmma::fill_fragment(b_frag, 0.0f);
+        wmma::fill_fragment(b_frag, 0.0f);
         wmma::fill_fragment(d_frag, 0.0f);
-        
+         
         // (2) mejora MMA multiples encadenados
-        wmma::load_matrix_sync(b_frag, outd_m0 + offset, TCSIZE);
+        if(blockIdx.x == n/1024 && threadIdx.x < 256){
+            int xpos = lastmat_pos + threadIdx.x;
+            if(xpos < n){
+                // cargar dato real
+                lastmat[threadIdx.x] = outd_m0[xpos];
+                //printf("%i  escribiendo dato %f \n", threadIdx.x, (float)outd_m0[xpos]);
+            }
+            else{
+                // cargar cero en pos 
+                lastmat[threadIdx.x] = 0;
+            }
+        }
+        __syncthreads();
+        grid.sync();
+        
+        
+        /*if(blockIdx.x == n/1024 && threadIdx.x == 0){
+            for(int i=0; i<16; ++i){
+                for(int j=0; j<16; ++j){
+                    printf("%f ", (float)lastmat[i*16 + j]);
+                }
+                printf("\n");
+            }
+        }
+         
+        __syncthreads();
+        grid.sync();*/
+        // ultimo warp de todo, hace la carga especial
+        if(gwid == (n/256)){ 
+            //if(wlane == 0){
+                //printf("(ultimo es %i)  blockIdx.x %i   gwid %i  lane  %i  valo r %f \n", n/1024, blockIdx.x, gwid, wlane, (float)lastmat[0]);
+            //}
+            wmma::load_matrix_sync(b_frag, lastmat, TCSIZE);
+        }
+        else{
+            wmma::load_matrix_sync(b_frag, outd_m0 + offset, TCSIZE);
+        }
         wmma::mma_sync(d_frag, a_frag, b_frag, d_frag);
-
         // (3) preparando datos para segundo MMA
         wmma::fill_fragment(b_frag, 1.0f);
         
@@ -214,9 +253,12 @@ __global__ void kernel_reduction_tc_theory(half* A, half* outd_m0, int n){
             }
         } 
         n = (n+255)/(256);
+        lastmat_pos = (n/256)*256;
         grid.sync();
     }
-    
+   
+    //if(id==0) printf("r: %f, %i, %i\n", (float) outd_m0[0],n,on);
+
     //siempre son menos de 256
     if(blockIdx.x == 0){
         int tid = threadIdx.x;
@@ -229,7 +271,40 @@ __global__ void kernel_reduction_tc_theory(half* A, half* outd_m0, int n){
         }
     }
  }
+
+/*__global__ void kernel_reduction_mma(half* A, half* outd_m0, int n){
+    // (1) cargar datos de memoria global a A, B y C frags
+    wmma::fill_fragment(a_frag, 1.0f);
+    //wmma::fill_fragment(b_frag, 0.0f);
+    wmma::fill_fragment(d_frag, 0.0f);
  
+    // (2) mejora MMA multiples encadenados
+    wmma::load_matrix_sync(b_frag, outd_m0 + offset, TCSIZE);
+    wmma::mma_sync(d_frag, a_frag, b_frag, d_frag);
+ 
+    // (3) preparando datos para segundo MMA
+    wmma::fill_fragment(b_frag, 1.0f);
+     
+    #pragma loop unroll
+    for(int i=0; i < 8; ++i){
+         a_frag.x[i] = d_frag.x[i];
+         a_frag.x[i+8] = d_frag.x[i];
+    }   
+     
+    wmma::fill_fragment(d_frag, 0.0f);
+     
+    // (4) MMA
+    wmma::mma_sync(d_frag, a_frag, b_frag, d_frag);
+ 
+    // (5) Almacenar resultado
+    #pragma loop unroll
+    for(int i=0; i < BSIZE; i=i+WARPSIZE){
+         if(threadIdx.x == i){ 
+             outd_m0[aux] = d_frag.x[0];
+         }   
+    }
+}*/
+
 __global__ void kernel_reduction_shuffle(half *A, float *out, int n){
      int off = blockIdx.x * blockDim.x + threadIdx.x;
      if(off < n){

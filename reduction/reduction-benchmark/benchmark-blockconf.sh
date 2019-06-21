@@ -43,10 +43,18 @@ do
             echo ${COMPILE}
             M=0
             S=0
+            x=0
+            y=0
+            z=0
+            v=0
             w1=0
             y1=0
             z1=0
             v1=0
+            w2=0
+            y2=0
+            z2=0
+            v2=0
             # Chosen MAP
             echo "./${BINARY} ${DEV}    ${N} ${ns[$q]} ${seed} ${REPEAT} ${met[$q]}"
             echo -n "${METHODS[$q]} ($q) map (${SAMPLES} Samples)............."
@@ -90,6 +98,9 @@ do
             echo " "
         done
         echo " " >> data/${OUTFILE}_B${B}.dat
+        echo " "
+        echo " "
+        echo " "
     done 
     echo " "
 done 
