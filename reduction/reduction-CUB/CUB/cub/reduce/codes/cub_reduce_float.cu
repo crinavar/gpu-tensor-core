@@ -42,7 +42,12 @@
 #include <stdio.h>
 #include <time.h>
 #include <sys/time.h>
-
+#include <iostream>
+#include <iomanip>
+#include <string>
+#include <map>
+#include <random>
+#include <cmath>
 #include <cub/util_allocator.cuh>
 #include <cub/device/device_reduce.cuh>
 
@@ -57,7 +62,7 @@ using namespace cub;
 
 bool                    g_verbose = false;  // Whether to display input/output to console
 CachingDeviceAllocator  g_allocator(true);  // Caching allocator for device memory
-int g_timing_iterations = 100;
+//int g_timing_iterations = 30;
 
 
 //---------------------------------------------------------------------
@@ -70,27 +75,46 @@ int g_timing_iterations = 100;
 
 
 
-float Initialize(float *h_in, int num_items)
+float Initialize_normal(float *h_in, int num_items, int seed)
 {
-    float inclusive = 0.0;
+     //srand(412);
+     float inclusive = 0.0;
+     //std::random_device rd;
+     std::mt19937 gen{seed};
+     std::normal_distribution<> d{0,1};
+     for (int i = 0; i < num_items; ++i)
+     {
+         //h_in[i]= (float)rand()/((float)(RAND_MAX)*1000);
+         h_in[i] = d(gen);
+         inclusive += h_in[i];
 
-    /*
-    for (int i = 0; i < num_items; ++i)
-    {
-        h_in[i] = i % 17;
-        inclusive += h_in[i];
-        //printf("%d\n",h_in[i] );
-    }
-    */
-
-    for (int i = 0; i < num_items; ++i)
-    {
-        h_in[i]= (float)rand()/(float)(RAND_MAX);; //redireccionar entrada estandar
-        inclusive += h_in[i];;
-    }
-    return inclusive;
+     }
+    /* std::map<int, int> hist{};
+     for(int n=0; n<10000; ++n) {
+         ++hist[std::round(d(gen))];
+     }
+     for(auto p : hist) {
+         std::cout << std::setw(2)
+                   << p.first << ' ' << std::string(p.second/200, '*') << '\n';
+     }*/
+     return inclusive;
 }
 
+float Initialize_uniform(float *h_in, int num_items, int seed)
+ {
+    //srand(12);
+    std::mt19937 gen(seed);
+    std::uniform_real_distribution<> d(0, 1);
+    float inclusive = 0.0;
+    for (int i = 0; i < num_items; ++i)
+    {
+        h_in[i] = (float) d(gen);
+        //h_in[i] = (float)rand()/((float)(RAND_MAX)*1000);
+        inclusive += h_in[i];
+ 
+    }
+    return inclusive;
+ }
 
 
 //---------------------------------------------------------------------
@@ -104,14 +128,24 @@ int main(int argc, char** argv)
 {
     srand(time(NULL));
     //problem size by console
-    int num_items = atoi(argv[1]);
+    int num_items = atoi(argv[2]);
     float h_out=0.0;
 
+    int dev = atoi(argv[1]);
+    cudaSetDevice(dev);
+
+    int dist = atoi(argv[3]);
+
+    int seed = atoi(argv[4]);
+
+    int repeat = atoi(argv[5]);
+    int g_timing_iterations = repeat;
     // Initialize command line
     CommandLineArgs args(argc, argv);
     g_verbose = args.CheckCmdLineFlag("v");
     args.GetCmdLineArgument("n", num_items);
 
+    /*
     // Print usage
     if (args.CheckCmdLineFlag("help"))
     {
@@ -126,17 +160,23 @@ int main(int argc, char** argv)
     // Initialize device
     CubDebugExit(args.DeviceInit());
 
-    printf("cub::DeviceReduce::Sum() %d items (%d-byte elements)\n",
+    //printf("cub::DeviceReduce::Sum() %d items (%d-byte elements)\n",
         num_items, (int) sizeof(int));
     fflush(stdout);
-
+*/
     // Allocate host arrays
     float* h_in = new float[num_items];
 
 
     // Initialize problem and solution
-    float  h_reference= Initialize(h_in, num_items);
-    printf("\tSuma calculada en Host:%f\n",h_reference);
+    float  h_reference;
+    if (dist==0){
+        h_reference = Initialize_normal(h_in, num_items,seed);
+    }
+    else{
+        h_reference = Initialize_uniform(h_in, num_items, seed);
+    }
+        //printf("\tSuma calculada en Host:%f\n",h_reference);
  
 
     // Allocate problem device arrays
@@ -165,34 +205,35 @@ int main(int argc, char** argv)
 
     // Check for correctness (and display results, if specified)
     int compare = CompareDeviceResults(&h_reference, d_out, 1, g_verbose, g_verbose);
-    printf("\t%s", compare ? "FAIL" : "PASS");
-    AssertEquals(0, compare);
+    //printf("\t%s", compare ? "FAIL" : "PASS");
+    //AssertEquals(0, compare);
 
      cudaMemcpy(&h_out, d_out, sizeof(float), cudaMemcpyDeviceToHost);
-    printf("\tsuma calculada en device: %f\n\n",h_out);
+    //printf("\tsuma calculada en device: %f\n\n",h_out);
 
 
         // Run this several times and average the performance results
     GpuTimer    timer;
     float       elapsed_millis          = 0.0;
 
-    printf("\tnumero de pruebas para tiempo promedio: %d\n", g_timing_iterations);
+ //   printf("\tnumero de pruebas para tiempo promedio: %d\n", g_timing_iterations);
+    
+    CubDebugExit(cudaMemcpy(d_in, h_in, sizeof(float) * num_items, cudaMemcpyHostToDevice));
+    timer.Start();
+
     for (int i = 0; i < g_timing_iterations; ++i)
     {
         // Copy problem to device
-        CubDebugExit(cudaMemcpy(d_in, h_in, sizeof(float) * num_items, cudaMemcpyHostToDevice));
-        timer.Start();
+        //CubDebugExit(cudaMemcpy(d_in, h_in, sizeof(float) * num_items, cudaMemcpyHostToDevice));
 
         // Run aggregate
         CubDebugExit(DeviceReduce::Sum(d_temp_storage, temp_storage_bytes, d_in, d_out, num_items));
 
-        timer.Stop();
-        elapsed_millis += timer.ElapsedMillis();
-
-
-
+        cudaDeviceSynchronize();
+        //elapsed_millis += timer.ElapsedMillis();
     }
-
+    timer.Stop();
+    elapsed_millis = timer.ElapsedMillis();
 
 
     // Check for kernel errors and STDIO from the kernel, if any
@@ -202,15 +243,15 @@ int main(int argc, char** argv)
     // Display timing results
     float avg_millis            = elapsed_millis / g_timing_iterations;
 
-   printf("\ttiempo promedio (mili segundos): %.4f\n", avg_millis);
-
+    //printf("\ttiempo promedio (mili segundos): %.4f\n", avg_millis);
+    printf("%f,%f,%f,%f,%f\n",avg_millis,(float)h_out,h_reference,fabs((float)h_out - h_reference),fabs(100.0f*fabs((float)h_out - h_reference)/h_reference));
     // Cleanup
     if (h_in) delete[] h_in;
     if (d_in) CubDebugExit(g_allocator.DeviceFree(d_in));
     if (d_out) CubDebugExit(g_allocator.DeviceFree(d_out));
     if (d_temp_storage) CubDebugExit(g_allocator.DeviceFree(d_temp_storage));
 
-    printf("\n\n");
+    //printf("\n\n");
 
     return 0;
 }
