@@ -2,6 +2,12 @@
 #include <cuda.h>
 #include <mma.h>
 #include <stdio.h>
+#include <iostream>
+#include <iomanip>
+#include <string>
+#include <map>
+#include <random>
+#include <cmath>
 #define REAL float
 #define TCSIZE 16
 #define TCSQ 256
@@ -10,13 +16,22 @@
 #define DIFF (BSIZE<<3)
 #include "kernel.cuh"
 
-void init(REAL *m, long n, const int val, int seed){
-    srand(seed);
+void init_normal(REAL *m, long n, const int val, int seed){
+    //srand(seed);
+    std::mt19937 gen{seed};
+    std::normal_distribution<> d{0,1};
     for(long k=0; k<n; ++k){
-        //m[k] = 0.001f;
-        //m[k] = (REAL) rand()/((REAL)RAND_MAX);
-        m[k] = (REAL) rand()/(((REAL)RAND_MAX)*100);
-        //m[k] = 0.001f;
+        m[k] = (float) d(gen); //(REAL) rand()/(((REAL)RAND_MAX)*1000);
+        //printf("%f\n",(float)m[k]);
+    }
+}
+
+void init_uniform(REAL *m, long n, const int val, int seed){
+    std::mt19937 gen{seed};
+    std::uniform_real_distribution<> d(0, 1);
+    for(long k=0; k<n; ++k){
+        m[k] = (float) d(gen);//(REAL) rand()/(((REAL)RAND_MAX)*1000);
+        //printf("%f\n",(float)m[k]);
     }
 }
 
@@ -59,8 +74,8 @@ void printmats(REAL *m, int n, const char *msg){
 
 int main(int argc, char **argv){
     // params
-    if(argc != 7){
-        fprintf(stderr, "run as ./prog dev n factor_ns seed REPEATS method\n");
+    if(argc != 8){
+        fprintf(stderr, "run as ./prog dev n factor_ns seed REPEATS dist method\n");
         exit(EXIT_FAILURE);
     }
     int dev = atoi(argv[1]);
@@ -69,7 +84,9 @@ int main(int argc, char **argv){
     float factor_ns = atof(argv[3]);
     int seed = atoi(argv[4]);
     int REPEATS = atoi(argv[5]);
-    int method = atoi(argv[6]);
+    int dist = atoi(argv[6]);
+    int method = atoi(argv[7]);
+
 #ifdef DEBUG
     printf("n=%i factor_ns=%i dev=%i  rand_seed = %i  REPEATS = %i  TCSIZE=%i method=%i\n", n, factor_ns, dev, seed, REPEATS, TCSIZE, method);
 #endif
@@ -93,7 +110,14 @@ int main(int argc, char **argv){
     cudaMalloc(&outd, sizeof(float)*1);
     cudaMalloc(&outd_m0, sizeof(half)*n);
 
-    init(A, n, 1, seed);
+    //init(A, n, 1, seed);
+    if(dist == 0){
+        init_normal(A, n, 1, seed);
+    }
+    else{
+        init_uniform(A, n, 1, seed);
+    }
+
     //printmats(A, n, "[after] mat A:");
     cudaMemcpy(Ad, A, sizeof(REAL)*n, cudaMemcpyHostToDevice);
     convertFp32ToFp16 <<< (n + 256 - 1)/256, 256 >>> (Adh, Ad, n);
@@ -218,7 +242,8 @@ int main(int argc, char **argv){
     //printf("gpu: %f\ncpu: %f \ndiff = %f (%f%%)\n", (float)*out, cpusum, fabs((float)*out - cpusum), 100.0f*fabs((float)*out - cpusum)/cpusum);
     /*/printf("%f \n",(n/(time/1000.0f))/1000000000.0f);
     printf("%f\n", time/(REPEATS));*/
-    printf("%f,%f,%f,%f,%f\n",time/(REPEATS),(float)*out,cpusum,fabs((float)*out - cpusum),100.0f*fabs((float)*out - cpusum)/cpusum);
+    printf("%f,%f,%f,%f,%f\n",time/(REPEATS),(float)*out,cpusum,fabs((float)*out
+                - cpusum),fabs(100.0f*fabs((float)*out - cpusum)/cpusum));
     /*if(n < PRINTLIMIT){
        printmats(A, on, "A final:");
     }*/

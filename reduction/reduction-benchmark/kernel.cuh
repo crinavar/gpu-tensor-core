@@ -12,10 +12,11 @@ const int WMMA_K = 16;
 #define CUERR {                                                            \
     cudaError_t err;                                                       \
     if ((err = cudaGetLastError()) != cudaSuccess) {                       \
-        printf("0, 0, 0, 0, 0\n", cudaGetErrorString(err), __FILE__, __LINE__); \
+        printf("CUDA error: %s : %s, line %d\n", cudaGetErrorString(err),__FILE__, __LINE__); \
         exit(1);                                                           \
     }                                                                      \
 }
+//printf("0, 0, 0, 0, 0\n", cudaGetErrorString(err), __FILE__, __LINE__); \
 //printf("CUDA error: %s : %s, line %d\n", cudaGetErrorString(err), __FILE__, __LINE__);
 __global__ void convertFp32ToFp16 (half *out, float *in, int n) {
     int idx = blockDim.x * blockIdx.x + threadIdx.x;
@@ -37,7 +38,7 @@ __inline__ __device__ REAL shuffle_reduction(REAL val){
 
 // kernel
 //__global__ void tc_reduction(half* A, int n){
-__inline__ __device__ REAL reduction_tc_warp(half *A, int offset, int lane){
+__inline__ __device__ REAL reduction_tc_warp(half *A, int offset, int lane, int wid){
     // definicion de offset y fragmentos
     wmma::fragment<wmma::matrix_a, WMMA_M, WMMA_N, WMMA_K, half, wmma::row_major> a_frag;
     wmma::fragment<wmma::matrix_b, WMMA_M, WMMA_N, WMMA_K, half, wmma::row_major> b_frag;
@@ -59,11 +60,17 @@ __inline__ __device__ REAL reduction_tc_warp(half *A, int offset, int lane){
 
     // (3) preparando datos para segundo MMA
     wmma::fill_fragment(b_frag, 1.0f);
-    #pragma loop unroll
+    /*#pragma loop unroll
     for(int i=0; i < 8; ++i){
         a_frag.x[i] = d_frag.x[i];
         a_frag.x[i+8] = d_frag.x[i];
-    }
+    }*/
+   
+    __shared__ half As[BSIZE*8];
+    //int offwid = (threadIdx.x/32)*256;
+    wmma::store_matrix_sync(As+wid, d_frag, TCSIZE, wmma::mem_row_major);
+    wmma::load_matrix_sync(a_frag, As+wid, TCSIZE);
+    
     wmma::fill_fragment(d_frag, 0.0f);
 
     // (4) MMA
@@ -72,6 +79,7 @@ __inline__ __device__ REAL reduction_tc_warp(half *A, int offset, int lane){
     // (5) Almacenar resultado
     if(lane == 0){
         //printf("block: %i, val %f\n",blockIdx.x,(float)d_frag.x[0]);
+        //printf("%f\n",(float)d_frag.x[0]);
         return d_frag.x[0];
     }
     else return 0.0f;
@@ -82,7 +90,7 @@ __inline__ __device__ float block_reduce_tc(half *a, int offset){
 	int tid = threadIdx.x;
 	int lane = tid & (WARPSIZE-1);
 	int wid = tid/WARPSIZE;
-	REAL val = reduction_tc_warp(a, offset + wid*TCSQ*R, lane);
+	REAL val = reduction_tc_warp(a, offset + wid*TCSQ*R, lane, wid*256);
 	if(lane == 0){
 		shared[wid] = val;
     }
@@ -161,11 +169,16 @@ __global__ void kernel_reduction_tc_theory(half* A, half* outd_m0, int n){
 
     wmma::fill_fragment(b_frag, 1.0f);
          
-    #pragma loop unroll
+    /*#pragma loop unroll
     for(int i=0; i < 8; ++i){
          a_frag.x[i] = d_frag.x[i];
          a_frag.x[i+8] = d_frag.x[i];
-    }   
+    } */  
+    
+    __shared__ half As[BSIZE*8];
+    int offwid = wid*256;
+    wmma::store_matrix_sync(As+offwid, d_frag, TCSIZE, wmma::mem_row_major);
+    wmma::load_matrix_sync(a_frag, As+offwid, TCSIZE);
             
     wmma::fill_fragment(d_frag, 0.0f);
              
@@ -234,12 +247,16 @@ __global__ void kernel_reduction_tc_theory(half* A, half* outd_m0, int n){
         // (3) preparando datos para segundo MMA
         wmma::fill_fragment(b_frag, 1.0f);
         
-        #pragma loop unroll
+        /*#pragma loop unroll
         for(int i=0; i < 8; ++i){
             a_frag.x[i] = d_frag.x[i];
             a_frag.x[i+8] = d_frag.x[i];
         }
-        
+        */
+        //__shared__ half As[TCSIZE*TCSIZE];
+        wmma::store_matrix_sync(As+offwid, d_frag, TCSIZE, wmma::mem_row_major);
+        wmma::load_matrix_sync(a_frag, As+offwid, TCSIZE);
+    
         wmma::fill_fragment(d_frag, 0.0f);
         
         // (4) MMA

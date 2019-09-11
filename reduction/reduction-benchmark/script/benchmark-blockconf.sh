@@ -24,6 +24,7 @@ TVAR[0]=0
 TSTDEV[0]=0
 TSTERR[0]=0
 seed=12
+cd ..
 for B in `seq ${STARTB} ${DB} ${ENDB}`;
 do
     echo "Benchmarking for B=${B}"
