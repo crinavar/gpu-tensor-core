@@ -41,7 +41,7 @@ void initmat(REAL *m, int nmats, const int val){
         int off = k*TCSIZE*TCSIZE;
         for(int i=0; i<TCSIZE; ++i){
             for(int j=0; j<TCSIZE; ++j){
-                //m[off + i*TCSIZE + j] = 1;//(j+i*16)/1000;//(val*(k+1));
+                //m[off + i*TCSIZE + j] = (float)(i*TCSIZE + j)/100.0;//(j+i*16)/1000;//(val*(k+1));
                 m[off + i*TCSIZE + j] = (float) d(gen);
             }
         }
@@ -165,13 +165,12 @@ int main(int argc, char **argv){
     }
     else if(alg == 2){
         printf("\033[32;1m[matmul tc 16x2-blocks]\033[0m...........");
-        block = dim3(TCSIZE, 2, 1);    
+        block = dim3(2*TCSIZE, 1);    
         //grid = dim3((totaln+TCSQ-1)/TCSQ, 1, 1);    
         grid = dim3(nmats, 1, 1);    
         timer_start(&start, &stop);
-        matmuls_tc<<<grid, block>>>(Adh, Bdh, Cd, totaln);
+        mma_identity<<<grid, block>>>(Adh, Bdh, Cd, totaln);
     }
-   
     else{
         printf("error: choose 0..6 for method\n");
         exit(EXIT_FAILURE);
@@ -209,6 +208,7 @@ int main(int argc, char **argv){
     cudaFree(Cd);
     cudaFree(Adh);
     cudaFree(Bdh);
+    cudaFree(Cdh);
     timer_stop(&start, &stop, "done");
 
     // timer results
