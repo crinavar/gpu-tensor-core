@@ -47,7 +47,10 @@ __global__ void matmuls_tc(half* A, half* B, REAL *C, int n){
 }
 
 __global__ void mma_identity(half* A, half* B, REAL *C, int n){
+    // offset for block
     int off = blockIdx.x * TCSQ;
+    // warp id
+    int wid = threadIdx.x >> 5;
     //__shared__ half As[256*2];//As[TCSIZE*TCSIZE];
     // solo el primer warp trabajara, de ocho warps
     wmma::fragment<wmma::matrix_a, WMMA_M, WMMA_N, WMMA_K, half, wmma::row_major> a_frag;
@@ -79,6 +82,8 @@ __global__ void mma_identity(half* A, half* B, REAL *C, int n){
     // hacer MMA D = A x I + [0], es decir D = A, y dado que A = C y C = B, => D = B
     wmma::mma_sync(d_frag, a_frag, b_frag, c_frag);
     // guardar D en C para imprimirla luego desde Host
-    wmma::store_matrix_sync(C + off, d_frag, TCSIZE, wmma::mem_row_major);
+    if(wid == 31){
+        wmma::store_matrix_sync(C + off, d_frag, TCSIZE, wmma::mem_row_major);
+    }
 }
 #endif

@@ -12,6 +12,7 @@
 #define TCSQ 256
 #define BSIZE 32
 #define PRINTLIMIT 10
+#define WARPS 32
 #include "kernel.cuh"
 
 
@@ -165,7 +166,7 @@ int main(int argc, char **argv){
     }
     else if(alg == 2){
         printf("\033[32;1m[matmul tc 16x2-blocks]\033[0m...........");
-        block = dim3(2*TCSIZE, 1);    
+        block = dim3(WARPS*(2*TCSIZE), 1);    
         //grid = dim3((totaln+TCSQ-1)/TCSQ, 1, 1);    
         grid = dim3(nmats, 1, 1);    
         timer_start(&start, &stop);
