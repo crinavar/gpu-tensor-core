@@ -195,7 +195,7 @@ int main(int argc, char **argv){
         //printf("reduction_tc_blockshuffle\n");
         block = dim3(TCSIZE*2*bs, 1, 1);
         grid = dim3((n + (TCSQ*bs*(R)) - 1)/(TCSQ*bs*(R)), 1, 1);
-        //printf("grid (%i, %i, %i)    block(%i, %i, %i)\n", grid.x, grid.y, grid.z, block.x, block.y, block.z);
+        printf("grid (%i, %i, %i)    block(%i, %i, %i)\n", grid.x, grid.y, grid.z, block.x, block.y, block.z);
         for(int i=0; i<REPEATS; ++i){
             cudaMemset(outd, 0, sizeof(REAL)*1);
             kernel_reduction_tc_blockshuffle<<<grid, block>>>(Adh, outd, n,bs);
@@ -217,7 +217,7 @@ int main(int argc, char **argv){
         //printf("ns_blocks %i, tc_blocks %i\n",ns_blocks,(int)tc_blocks);
         for(int i=0; i<REPEATS; ++i){
             cudaMemset(outd, 0, sizeof(REAL)*1);
-            kernel_reduction_tc_mixed<<<grid, block>>>(Adh, outd, tc_blocks, ns_blocks);  CUERR;
+            kernel_reduction_tc_mixed<<<grid, block>>>(n, Adh, outd, tc_blocks, ns_blocks);  CUERR;
             cudaDeviceSynchronize();
         }
         cudaEventRecord(stop);
@@ -239,7 +239,7 @@ int main(int argc, char **argv){
     float time = 0.0f;
     cudaEventElapsedTime(&time, start, stop);
     float cpusum = gold_reduction(A, n);
-    //printf("gpu: %f\ncpu: %f \ndiff = %f (%f%%)\n", (float)*out, cpusum, fabs((float)*out - cpusum), 100.0f*fabs((float)*out - cpusum)/cpusum);
+    printf("gpu: %f\ncpu: %f \ndiff = %f (%f%%)\n", (float)*out, cpusum, fabs((float)*out - cpusum), 100.0f*fabs((float)*out - cpusum)/cpusum);
     /*/printf("%f \n",(n/(time/1000.0f))/1000000000.0f);
     printf("%f\n", time/(REPEATS));*/
     printf("%f,%f,%f,%f,%f\n",time/(REPEATS),(float)*out,cpusum,fabs((float)*out

@@ -38,7 +38,7 @@ __inline__ __device__ REAL shuffle_reduction(REAL val){
 
 // kernel
 //__global__ void tc_reduction(half* A, int n){
-__inline__ __device__ REAL reduction_tc_warp(half *A, int offset, int lane, int wid){
+__inline__ __device__ REAL reduction_tc_warp(int N, half *A, int offset, int lane, int warpoff){
     // definicion de offset y fragmentos
     wmma::fragment<wmma::matrix_a, WMMA_M, WMMA_N, WMMA_K, half, wmma::row_major> a_frag;
     wmma::fragment<wmma::matrix_b, WMMA_M, WMMA_N, WMMA_K, half, wmma::row_major> b_frag;
@@ -51,29 +51,34 @@ __inline__ __device__ REAL reduction_tc_warp(half *A, int offset, int lane, int 
 
     // (2) mejora MMA multiples encadenados
     //const int bigoffset = gridDim.x * 32 * TCSQ;
+    if(offset >= N){ return 0.0f; }
     #pragma loop unroll
     for(int i=0; i<R; ++i){
         //if(threadIdx.x == 0) printf("offset %i \n",offset + TCSQ*32*(i+1));
-        wmma::load_matrix_sync(b_frag, A + offset + 256*i, TCSIZE);
+        wmma::load_matrix_sync(b_frag, A + offset + (i<<8), TCSIZE);
         wmma::mma_sync(d_frag, a_frag, b_frag, d_frag);
     }
 
     // (3) preparando datos para segundo MMA
     wmma::fill_fragment(b_frag, 1.0f);
-    /*#pragma loop unroll
-    for(int i=0; i < 8; ++i){
+    // [OPCION 1] copia manual
+    #pragma loop unroll
+    for(int i=0; i < 8 ; ++i){
         a_frag.x[i] = d_frag.x[i];
         a_frag.x[i+8] = d_frag.x[i];
-    }*/
+    }
    
-    __shared__ half As[BSIZE*8];
     //int offwid = (threadIdx.x/32)*256;
-    wmma::store_matrix_sync(As+wid, d_frag, TCSIZE, wmma::mem_row_major);
-    wmma::load_matrix_sync(a_frag, As+wid, TCSIZE);
-    
-    wmma::fill_fragment(d_frag, 0.0f);
+    // [OPCION 2] copia a shared mem
+    //__shared__ half As[BSIZE*8];
+    //wmma::store_matrix_sync(As+warpoff, d_frag, TCSIZE, wmma::mem_row_major);
+    //wmma::load_matrix_sync(a_frag, As+warpoff, TCSIZE);
+    //wmma::fill_fragment(d_frag, 0.0f);
 
-    // (4) MMA
+
+
+
+    //// (4) MMA
     wmma::mma_sync(d_frag, a_frag, b_frag, d_frag);
 
     // (5) Almacenar resultado
@@ -81,21 +86,25 @@ __inline__ __device__ REAL reduction_tc_warp(half *A, int offset, int lane, int 
         //printf("block: %i, val %f\n",blockIdx.x,(float)d_frag.x[0]);
         //printf("%f\n",(float)d_frag.x[0]);
         return d_frag.x[0];
+        //return 1.0f;
     }
     else return 0.0f;
 }
 
-__inline__ __device__ float block_reduce_tc(half *a, int offset){
-	static __shared__ REAL shared[WARPSIZE];
+__inline__ __device__ float block_reduce_tc(int N, half *a, int offset){
+	__shared__ REAL shared[WARPSIZE];
 	int tid = threadIdx.x;
 	int lane = tid & (WARPSIZE-1);
-	int wid = tid/WARPSIZE;
-	REAL val = reduction_tc_warp(a, offset + wid*TCSQ*R, lane, wid*256);
+	//int wid = tid/WARPSIZE;
+	int wid = tid >> 5;
+	REAL val = reduction_tc_warp(N, a, offset + wid*TCSQ*R, lane, wid << 8);
 	if(lane == 0){
 		shared[wid] = val;
     }
 	__syncthreads();
-	val = (tid < blockDim.x/WARPSIZE) ? shared[lane] : (REAL) 0.0f;
+	//val = (tid < blockDim.x/WARPSIZE) ? shared[lane] : (REAL) 0.0f;
+    //printf("thread %i val %f\n", threadIdx.x, val);
+	val = (tid < (blockDim.x >> 5)) ? shared[lane] : (REAL) 0.0f;
 	if(wid == 0){
         val = shuffle_reduction(val);
     }
@@ -122,14 +131,14 @@ __global__ void kernel_reduction_tc_blockshuffle(half *a, float *out, int N,int 
 	//int offset = blockIdx.x * TCSQ * 32;       
 	int offset = blockIdx.x * (bs * TCSQ * R); 
 	if(offset < N){
-		float sumf = block_reduce_tc(a, offset);
+		float sumf = block_reduce_tc(N, a, offset);
         if(threadIdx.x == 0){
             //printf("offset %i \n",offset);
             atomicAdd(out, sumf);
         }
 	}
 }
-__global__ void kernel_reduction_tc_mixed(half *a, float *out, int bntc, int bns){
+__global__ void kernel_reduction_tc_mixed(int N, half *a, float *out, int bntc, int bns){
     int offset_shuffle = blockIdx.x * blockDim.x + threadIdx.x;
     float sum;
     if(offset_shuffle < bns*BSIZE){
@@ -137,7 +146,7 @@ __global__ void kernel_reduction_tc_mixed(half *a, float *out, int bntc, int bns
     }
     else{
         int offset_tc = (blockIdx.x-bns)*DIFF;
-        sum = block_reduce_tc(a, offset_tc);
+        sum = block_reduce_tc(N, a, offset_tc);
         //int offset_tc = (blockIdx.x - bns) * DIFF;
         //sum = block_reduce_tc(a, bns*BSIZE+offset_tc);
     }

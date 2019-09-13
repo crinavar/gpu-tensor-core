@@ -12,7 +12,7 @@
 #define TCSQ 256
 #define BSIZE 32
 #define PRINTLIMIT 10
-#define WARPS 32
+#define WARPS 1
 #include "kernel.cuh"
 
 
@@ -89,6 +89,13 @@ void timer_stop(cudaEvent_t *start, cudaEvent_t *stop, const char *msg){
     printf("%s: %f secs\n", msg, time/1000.0f);
 }
 
+REAL reduction(REAL *a, int n){
+    REAL r = 0.0f;
+    for(int i=0; i<n; ++i){
+       r += a[i];
+    }
+    return r;
+}
 
 // main
 int main(int argc, char **argv){
@@ -171,6 +178,7 @@ int main(int argc, char **argv){
         grid = dim3(nmats, 1, 1);    
         timer_start(&start, &stop);
         mma_identity<<<grid, block>>>(Adh, Bdh, Cd, totaln);
+        //matmuls_tc<<<grid, block>>>(Adh, Bdh, Cd, totaln);
     }
     else{
         printf("error: choose 0..6 for method\n");
@@ -193,6 +201,7 @@ int main(int argc, char **argv){
         printmats(A, nmats, "[after] mat A:");
         printmats(B, nmats, "[after] mat B:");
         printmats(C, nmats, "[after] mat C:");
+        printf("reduction(B) = %f\n", reduction(B, 256));
     }
 
     // free memory in CPU and GPU
