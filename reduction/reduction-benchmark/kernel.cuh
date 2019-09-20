@@ -70,7 +70,7 @@ __inline__ __device__ REAL reduction_tc_warp(int N, half *A, int offset, int lan
    
     //int offwid = (threadIdx.x/32)*256;
     // [OPCION 2] copia a shared mem
-    __shared__ half As[BSIZE*8];
+    __shared__ half As[DIFF];
     wmma::store_matrix_sync(As+warpoff, d_frag, TCSIZE, wmma::mem_row_major);
     wmma::load_matrix_sync(a_frag, As+warpoff, TCSIZE);
     wmma::fill_fragment(d_frag, 0.0f);
@@ -161,7 +161,7 @@ __global__ void kernel_reduction_tc_theory(half* A, half* outd_m0, int n){
 
     int wid = threadIdx.x/32;
     //int wlane = threadIdx.x % 32;
-    int offset = blockIdx.x*BSIZE + wid*32;
+    int offset = blockIdx.x*DIFF + wid*256;
     // revisar aux     offset bloque  (BSIZE/WSIZE)*TCSQ*blockIdx.x    +   wid
     //int aux = wid+((BSIZE/TCSQ)*blockIdx.x*8);
     int aux = (BSIZE/WARPSIZE)*blockIdx.x + wid;
@@ -184,7 +184,7 @@ __global__ void kernel_reduction_tc_theory(half* A, half* outd_m0, int n){
          a_frag.x[i+8] = d_frag.x[i];
     } */  
     
-    __shared__ half As[BSIZE*8];
+    __shared__ half As[DIFF];
     int offwid = wid*256;
     wmma::store_matrix_sync(As+offwid, d_frag, TCSIZE, wmma::mem_row_major);
     wmma::load_matrix_sync(a_frag, As+offwid, TCSIZE);
@@ -201,6 +201,10 @@ __global__ void kernel_reduction_tc_theory(half* A, half* outd_m0, int n){
             outd_m0[aux] = d_frag.x[0];
         }
     }
+    /*if(threadIdx.x % 32==0){
+        outd_m0[aux] = d_frag.x[0];
+    }*/
+
     n = (n+255)/(256);
     int id = blockIdx.x*BSIZE + threadIdx.x;
     int gwid = id/WARPSIZE;
@@ -208,7 +212,7 @@ __global__ void kernel_reduction_tc_theory(half* A, half* outd_m0, int n){
     grid.sync();
     //if(id == 0) printf("here\n"); 
 
-    while(n>=256){
+    while(n>=DIFF){
         // (1) cargar datos de memoria global a A, B y C frags
         wmma::fill_fragment(a_frag, 1.0f);
         wmma::fill_fragment(b_frag, 0.0f);
@@ -262,7 +266,6 @@ __global__ void kernel_reduction_tc_theory(half* A, half* outd_m0, int n){
             a_frag.x[i+8] = d_frag.x[i];
         }
         */
-        //__shared__ half As[TCSIZE*TCSIZE];
         wmma::store_matrix_sync(As+offwid, d_frag, TCSIZE, wmma::mem_row_major);
         wmma::load_matrix_sync(a_frag, As+offwid, TCSIZE);
     
@@ -285,7 +288,7 @@ __global__ void kernel_reduction_tc_theory(half* A, half* outd_m0, int n){
    
     //if(id==0) printf("r: %f, %i, %i\n", (float) outd_m0[0],n,on);
 
-    //siempre son menos de 256
+    //siempre son menos de DIFF
     if(blockIdx.x == 0){
         int tid = threadIdx.x;
         half val;
@@ -298,39 +301,6 @@ __global__ void kernel_reduction_tc_theory(half* A, half* outd_m0, int n){
     }
  }
 
-/*__global__ void kernel_reduction_mma(half* A, half* outd_m0, int n){
-    // (1) cargar datos de memoria global a A, B y C frags
-    wmma::fill_fragment(a_frag, 1.0f);
-    //wmma::fill_fragment(b_frag, 0.0f);
-    wmma::fill_fragment(d_frag, 0.0f);
- 
-    // (2) mejora MMA multiples encadenados
-    wmma::load_matrix_sync(b_frag, outd_m0 + offset, TCSIZE);
-    wmma::mma_sync(d_frag, a_frag, b_frag, d_frag);
- 
-    // (3) preparando datos para segundo MMA
-    wmma::fill_fragment(b_frag, 1.0f);
-     
-    #pragma loop unroll
-    for(int i=0; i < 8; ++i){
-         a_frag.x[i] = d_frag.x[i];
-         a_frag.x[i+8] = d_frag.x[i];
-    }   
-     
-    wmma::fill_fragment(d_frag, 0.0f);
-     
-    // (4) MMA
-    wmma::mma_sync(d_frag, a_frag, b_frag, d_frag);
- 
-    // (5) Almacenar resultado
-    #pragma loop unroll
-    for(int i=0; i < BSIZE; i=i+WARPSIZE){
-         if(threadIdx.x == i){ 
-             outd_m0[aux] = d_frag.x[0];
-         }   
-    }
-}*/
-
 __global__ void kernel_reduction_shuffle(half *A, float *out, int n){
      int off = blockIdx.x * blockDim.x + threadIdx.x;
      if(off < n){
@@ -338,7 +308,6 @@ __global__ void kernel_reduction_shuffle(half *A, float *out, int n){
          sum = block_reduce_shuffle(sum);
          if(threadIdx.x == 0){
              atomicAdd(out, sum);
-             //printf("sum %f \n",(float)sum);
          }
      }
  }

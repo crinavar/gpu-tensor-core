@@ -248,7 +248,7 @@ int main(int argc, char **argv){
        printmats(A, on, "A final:");
     }*/
     //printarray(A, 1, "D_final: ");
-
+    //printf("%i\n",DIFF);
     free(A);
     free(out);
     cudaFree(Ad);
