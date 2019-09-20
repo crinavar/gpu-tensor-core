@@ -1,4 +1,4 @@
-BSIZE=32
+BSIZE=128
 R=1
 PARAMS=-O3 -DBSIZE=${BSIZE} -DR=${R}
 all:

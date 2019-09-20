@@ -65,7 +65,8 @@ __global__ void mma_identity(half* A, half* B, REAL *C, int n){
     // (3) cargar datos de memoria global a A, B y C frags
     // cargar identidad en A, osea A = I
     //wmma::load_matrix_sync(a_frag, A + off, TCSIZE);
-    wmma::fill_fragment(a_frag, 1.0f);
+    wmma::load_matrix_sync(a_frag, A + off, TCSIZE);
+    //wmma::fill_fragment(a_frag, 1.0f);
     // cargar datos de B
     wmma::load_matrix_sync(b_frag, B + off, TCSIZE);
     // inicializar C en cero
@@ -75,19 +76,29 @@ __global__ void mma_identity(half* A, half* B, REAL *C, int n){
 
     // MMA 2
     // ahora cargar identidad en B, osea B = I
-    // copiar C en A a mano, A = C
     wmma::fill_fragment(a_frag, 0.0f);
-    //for(int i=0; i < 8; ++i){
-    //    a_frag.x[i] = c_frag.x[i];
-    //    a_frag.x[i+8] = c_frag.x[i];
-    //}
-    wmma::store_matrix_sync(As+off, c_frag, TCSIZE, wmma::mem_row_major);
-    wmma::load_matrix_sync(a_frag, As+off, TCSIZE);
+
+
+    // copiar C en A a mano, A = C
+        for(int i=0; i < 8; ++i){
+            //if(threadIdx.x != 8){break;}
+            //a_frag.x[i] = c_frag.x[i];
+            int o = ((threadIdx.x >> 3) & 1) << 3;
+            a_frag.x[i+o] = c_frag.x[i];
+            a_frag.x[i] = c_frag.x[i];
+            //a_frag.x[i+8] = 5.0f;c_frag.x[i];
+        }
+
+    // shared mem
+    //wmma::store_matrix_sync(As+off, c_frag, TCSIZE, wmma::mem_row_major);
+    //wmma::load_matrix_sync(a_frag, As+off, TCSIZE);
+
+
     // hacer C = 0
     wmma::fill_fragment(c_frag, 0.0f);
     // [DEBUG] FUERTEMENTE RELACIONADO AL BUG
-    wmma::load_matrix_sync(b_frag, A + off, TCSIZE);
-    //wmma::fill_fragment(b_frag, 1.0f);
+    //wmma::load_matrix_sync(b_frag, A + off, TCSIZE);
+    wmma::fill_fragment(b_frag, 1.0f);
 
 
     // hacer MMA D = A x I + [0], es decir D = A, y dado que A = C y C = B, => D = B

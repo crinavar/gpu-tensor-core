@@ -51,7 +51,7 @@ __inline__ __device__ REAL reduction_tc_warp(int N, half *A, int offset, int lan
 
     // (2) mejora MMA multiples encadenados
     //const int bigoffset = gridDim.x * 32 * TCSQ;
-    if(offset >= N){ return 0.0f; }
+    //if(offset >= N){ return 0.0f; }
     #pragma loop unroll
     for(int i=0; i<R; ++i){
         //if(threadIdx.x == 0) printf("offset %i \n",offset + TCSQ*32*(i+1));
@@ -62,18 +62,18 @@ __inline__ __device__ REAL reduction_tc_warp(int N, half *A, int offset, int lan
     // (3) preparando datos para segundo MMA
     wmma::fill_fragment(b_frag, 1.0f);
     // [OPCION 1] copia manual
-    #pragma loop unroll
-    for(int i=0; i < 8 ; ++i){
-        a_frag.x[i] = d_frag.x[i];
-        a_frag.x[i+8] = d_frag.x[i];
-    }
+    //#pragma loop unroll
+    //for(int i=0; i < 8 ; ++i){
+    //    a_frag.x[i] = d_frag.x[i];
+    //    a_frag.x[i+8] = d_frag.x[i];
+    //}
    
     //int offwid = (threadIdx.x/32)*256;
     // [OPCION 2] copia a shared mem
-    //__shared__ half As[BSIZE*8];
-    //wmma::store_matrix_sync(As+warpoff, d_frag, TCSIZE, wmma::mem_row_major);
-    //wmma::load_matrix_sync(a_frag, As+warpoff, TCSIZE);
-    //wmma::fill_fragment(d_frag, 0.0f);
+    __shared__ half As[BSIZE*8];
+    wmma::store_matrix_sync(As+warpoff, d_frag, TCSIZE, wmma::mem_row_major);
+    wmma::load_matrix_sync(a_frag, As+warpoff, TCSIZE);
+    wmma::fill_fragment(d_frag, 0.0f);
 
 
 

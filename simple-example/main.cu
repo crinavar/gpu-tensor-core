@@ -35,15 +35,25 @@ void last_cuda_error(const char *msg){
 	}
 }
 
-void initmat(REAL *m, int nmats, const int val){
+void initnormal(REAL *m, int nmats, float mean, float stdev){
     std::mt19937 gen{12};
-    std::normal_distribution<> d(0, 1);
+    std::normal_distribution<> d(mean, stdev);
     for(int k=0; k<nmats; ++k){
         int off = k*TCSIZE*TCSIZE;
         for(int i=0; i<TCSIZE; ++i){
             for(int j=0; j<TCSIZE; ++j){
                 //m[off + i*TCSIZE + j] = (float)(i*TCSIZE + j)/100.0;//(j+i*16)/1000;//(val*(k+1));
                 m[off + i*TCSIZE + j] = (float) d(gen);
+            }
+        }
+    }
+}
+void initconst(REAL *m, int nmats, const int val){
+    for(int k=0; k<nmats; ++k){
+        int off = k*TCSIZE*TCSIZE;
+        for(int i=0; i<TCSIZE; ++i){
+            for(int j=0; j<TCSIZE; ++j){
+                m[off + i*TCSIZE + j] = val;//(float) d(gen);
             }
         }
     }
@@ -63,6 +73,19 @@ void initiden(REAL *m, int nmats, const int val){
     }
 
 }
+void initseq(REAL *m, int nmats, const float start, const float dx){
+    float count = start;
+    for(int k=0; k<nmats; ++k){
+        int off = k*TCSIZE*TCSIZE;
+        for(int i=0; i<TCSIZE; ++i){
+            for(int j=0; j<TCSIZE; ++j){
+                m[off + i*TCSIZE + j] = count;
+                count += dx;
+            }
+        }
+    }
+}
+
 void printmats(REAL *m, int nmats, const char *msg){
     printf("%s:\n", msg);
     for(int k=0; k<nmats; ++k){
@@ -70,7 +93,7 @@ void printmats(REAL *m, int nmats, const char *msg){
         int off = k*TCSIZE*TCSIZE;
         for(int i=0; i<TCSIZE; ++i){
             for(int j=0; j<TCSIZE; ++j){
-                printf("%.2f ", m[off + i*TCSIZE + j]);
+                printf("%.3f ", m[off + i*TCSIZE + j]);
             }
             printf("\n");
         }
@@ -142,8 +165,8 @@ int main(int argc, char **argv){
     printf("CPU init (A[], B[], C[]).........."); fflush(stdout);
     timer_start(&start, &stop);
     initiden(A, nmats, 1);
-    initmat(B, nmats, 1);
-    initmat(C, nmats, 0);
+    initseq(B, nmats, 0.001f, 0.001f);
+    initconst(C, nmats, 0);
     timer_stop(&start, &stop, "done");
     
 
