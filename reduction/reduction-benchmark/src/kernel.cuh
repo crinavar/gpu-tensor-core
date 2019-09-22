@@ -139,20 +139,29 @@ __global__ void kernel_reduction_tc_blockshuffle(half *a, float *out, int N,int 
 	}
 }
 __global__ void kernel_reduction_tc_mixed(int N, half *a, float *out, int bntc, int bns){
-    int offset_shuffle = blockIdx.x * blockDim.x + threadIdx.x;
-    float sum;
-    if(offset_shuffle < bns*BSIZE){
+    float sum=0;
+    int offset_tc = (blockIdx.x)*DIFF;
+    if(blockIdx.x < bntc){
+        sum = block_reduce_tc(N, a, offset_tc);
+    }
+    else{
+    //if(blockIdx.x >= bntc){
+        int offset_shuffle = (blockIdx.x-bntc) * blockDim.x + threadIdx.x;
+        sum = block_reduce_shuffle(a[offset_shuffle+bntc*DIFF]);
+        //if(threadIdx.x==0)printf("%f\n",(float)offset_shuffle);
+    }
+/*    if(offset_shuffle < bns*BSIZE){
         sum = block_reduce_shuffle(a[offset_shuffle]);
     }
     else{
-        int offset_tc = (blockIdx.x-bns)*DIFF;
+        int offset_tc = (blockIdx.x)*DIFF+bns*BSIZE;
         sum = block_reduce_tc(N, a, offset_tc);
         //int offset_tc = (blockIdx.x - bns) * DIFF;
         //sum = block_reduce_tc(a, bns*BSIZE+offset_tc);
     }
-     if(threadIdx.x == 0){
-         atomicAdd(out, sum);
-     }
+  */  if(threadIdx.x == 0){
+        atomicAdd(out, sum);
+    }
 }
 
 __global__ void kernel_reduction_tc_theory(half* A, half* outd_m0, int n){
@@ -212,14 +221,14 @@ __global__ void kernel_reduction_tc_theory(half* A, half* outd_m0, int n){
     grid.sync();
     //if(id == 0) printf("here\n"); 
 
-    while(n>=DIFF){
+    while(n>=256){
         // (1) cargar datos de memoria global a A, B y C frags
         wmma::fill_fragment(a_frag, 1.0f);
         wmma::fill_fragment(b_frag, 0.0f);
         wmma::fill_fragment(d_frag, 0.0f);
          
         // (2) mejora MMA multiples encadenados
-        if(blockIdx.x == n/1024 && threadIdx.x < 256){
+        if(blockIdx.x == n/BSIZE && threadIdx.x < 256){
             int xpos = lastmat_pos + threadIdx.x;
             if(xpos < n){
                 // cargar dato real

@@ -58,13 +58,13 @@ do
         do
             case "$q" in
                 #case 1
-                "0") value=`./${BINARY} ${DEV}    ${N} 0 ${SEED} ${REPEAT} ${DIST} 2`;;
+                "0") value=`./src/${BINARY} ${DEV}    ${N} 0 ${SEED} ${REPEAT} ${DIST} 2`;;
                 #case 2
-                "1") value=`./${BINARY}_cub16 ${DEV} ${N} ${DIST} ${SEED} ${REPEAT}`;;
+                "1") value=`./src/${BINARY}_cub16 ${DEV} ${N} ${DIST} ${SEED} ${REPEAT}`;;
                 #case 3
-                "2") value=`./${BINARY}_cub32 ${DEV} ${N} ${DIST} ${SEED} ${REPEAT}`;;
+                "2") value=`./src/${BINARY}_cub32 ${DEV} ${N} ${DIST} ${SEED} ${REPEAT}`;;
                 #case 4
-                "3") value=`./${BINARY} ${DEV}    ${N} 0 ${SEED} ${REPEAT} ${DIST} 0`;;
+                "3") value=`./src/${BINARY} ${DEV}    ${N} 0 ${SEED} ${REPEAT} ${DIST} 0`;;
             esac
             #echo "$value"
             x="$(cut -d',' -f1 <<<"$value")"

@@ -1,6 +1,6 @@
 #!/bin/bash
-if [ "$#" -ne 11 ]; then
-    echo "run as ./benchmark-blockconf.sh    DEV     STARTB ENDB DB    STARTN ENDN DN     KREPEATS SAMPLES BINARY OUTFILE"
+if [ "$#" -ne 12 ]; then
+    echo "run as ./benchmark-blockconf.sh    DEV     STARTB ENDB DB    STARTN ENDN DN  DIST   KREPEATS SAMPLES BINARY OUTFILE"
     exit;
 fi
 DEV=$1
@@ -10,10 +10,11 @@ DB=$4
 STARTN=$5
 ENDN=$6
 DN=$7
-REPEAT=$8
-SAMPLES=$9
-BINARY=${10}
-OUTFILE=${11}
+DIST=$8
+REPEAT=$9
+SAMPLES=${10}
+BINARY=${11}
+OUTFILE=${12}
 METHODS=("shuffle" "tc_theory" "tc_block" "tc_mixed" "tc_chain_8" "tc_chain_16" "tc_chain_32")
 NM=$((${#METHODS[@]}-1))
 met=("0" "1" "2" "3" "2" "2" "2")
@@ -24,7 +25,7 @@ TVAR[0]=0
 TSTDEV[0]=0
 TSTERR[0]=0
 seed=12
-cd ..
+cd ../src
 for B in `seq ${STARTB} ${DB} ${ENDB}`;
 do
     echo "Benchmarking for B=${B}"
@@ -35,7 +36,7 @@ do
     for N in `seq ${STARTN} ${DN} ${ENDN}`;
     do
         echo "DEV=${DEV}  N=${N} B=${B}"
-        echo -n "${N}   ${B}    " >> data/${OUTFILE}_B${B}.dat
+        echo -n "${N}   ${B}    " >> ../data/${OUTFILE}_B${B}.dat
         #RPARAM=$(($N/${LB}))
         RPARAM=$(($N/${B}))
         for q in `seq 0 ${NM}`;
@@ -57,11 +58,13 @@ do
             z2=0
             v2=0
             # Chosen MAP
-            echo "./${BINARY} ${DEV}    ${N} ${ns[$q]} ${seed} ${REPEAT} ${met[$q]}"
+            #echo "./${BINARY} ${DEV}    ${N} ${ns[$q]} ${seed} ${REPEAT} ${met[$q]}"
+            echo "./${BINARY} ${DEV}    ${N} ${ns[$q]} ${seed} ${REPEAT} ${DIST} ${met[$q]}"
             echo -n "${METHODS[$q]} ($q) map (${SAMPLES} Samples)............."
             for k in `seq 1 ${SAMPLES}`;
             do
-                value=`./${BINARY} ${DEV}    ${N} ${ns[$q]} $((${seed}*${k})) ${REPEAT} ${met[$q]}`
+                #value=`./${BINARY} ${DEV}    ${N} ${ns[$q]} $((${seed}*${k})) ${REPEAT} ${met[$q]}`
+                value=`./${BINARY} ${DEV}    ${N} ${ns[$q]} ${seed} ${REPEAT} ${DIST} ${met[$q]}`
                 #echo "./${BINARY} ${DEV}    ${N} ${ns[$q]} $((${seed}*${k})) ${REPEAT} ${met[$q]}"
                 x="$(cut -d',' -f1 <<<"$value")"
                 y="$(cut -d',' -f2 <<<"$value")"
@@ -95,10 +98,10 @@ do
             #echo "--------> $x1"
             echo "---> B=${B} N=${N} --> (MEAN, VAR, STDEV, STERR, SUM, CPUSUM,
             DIFF, %DIFF) -> (${TMEAN[$q]}[ms], ${TVAR[$q]}, ${TSTDEV[$q]}, ${TSTERR[$q]}, ${y2}, ${w2}, ${z2}, ${v2})"
-            echo -n "${TMEAN[$q]} ${TVAR[$q]} ${TSTDEV[$q]} ${TSTERR[$q]} ${y} ${w} ${z} ${v}        " >> data/${OUTFILE}_B${B}.dat
+            echo -n "${TMEAN[$q]} ${TVAR[$q]} ${TSTDEV[$q]} ${TSTERR[$q]} ${y} ${w} ${z} ${v}        " >> ../data/${OUTFILE}_B${B}.dat
             echo " "
         done
-        echo " " >> data/${OUTFILE}_B${B}.dat
+        echo " " >> ../data/${OUTFILE}_B${B}.dat
         echo " "
         echo " "
         echo " "

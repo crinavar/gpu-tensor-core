@@ -1,37 +1,39 @@
 #!/bin/bash
-if [ "$#" -ne 9 ]; then
-    echo "run as ./find_the_best_block_size.sh    DEV     STARTB ENDB DB    N     KREPEATS SAMPLES BINARY OUTFILE"
+if [ "$#" -ne 8 ]; then
+    echo "run as ./benchmark-blockconf.sh    DEV    N  SEED   DIST   KREPEATS SAMPLES BINARY OUTFILE"
     exit;
 fi
-
 DEV=$1
-STARTB=$2
-ENDB=$3
-DB=$4
-N=$5
-REPEAT=$6
-SAMPLES=$7
-BINARY=${8}
-OUTFILE=${9}
-METHODS=("shuffle" "tc_theory" "tc_block" "tc_mixed" "tc_chain_8" "tc_chain_16" "tc_chain_32")
+N=$2
+SEED=$3
+DIST=$4
+REPEAT=$5
+SAMPLES=$6
+BINARY=${7}
+OUTFILE=${8}
+METHODS=("tc_block" "cub_16" "cub_32" "shuffle")
+DISTRIBUTION=("normal" "uniform")
 NM=$((${#METHODS[@]}-1))
-met=("0" "1" "2" "3" "2" "2" "2")
-chain=("1" "1" "1" "1" "8" "16" "32")
-ns=("0" "0" "0" "0.5" "0" "0" "0")
 TMEAN[0]=0
 TVAR[0]=0
 TSTDEV[0]=0
 TSTERR[0]=0
-seed=12
-cd ..
-for B in `seq ${STARTB} ${DB} ${ENDB}`;
+STARTB=32
+DB=32
+ENDDB=1024
+
+cd ../src
+#for B in `seq ${STARTB} ${DB} ${ENDB}`;
+#for (( i=1; i <= 32; i=i*2 ))
+for (( R=1; R <= 16; ++R ))
 do
-    LB=$((${B}))
-    echo "DEV=${DEV}  N=${N} B=${B}"
-    echo -n "${N}   ${B}    " >> data/${OUTFILE}.dat
-    for q in `seq 0 ${NM}`;
-        do
-        COMPILE=`make BSIZE=${LB} R=${chain[$q]}`
+    #B=$((32*$i))
+    echo -n "${N}   ${R}    " >> ../data/${OUTFILE}_${DISTRIBUTION[$DIST]}.dat
+    for B in 32 128 512 1024;
+    do
+        #B=$((32*$i))
+        echo "Compiling with BSIZE=$B"
+        COMPILE=`make BSIZE=${B} R=${R}`
         echo ${COMPILE}
         M=0
         S=0
@@ -47,13 +49,9 @@ do
         y2=0
         z2=0
         v2=0
-        # Chosen MAP
-        echo "./${BINARY} ${DEV}    ${N} ${ns[$q]} ${seed} ${REPEAT} ${met[$q]}"
-        echo -n "${METHODS[$q]} ($q) map (${SAMPLES} Samples)............."
         for k in `seq 1 ${SAMPLES}`;
         do
-            value=`./${BINARY} ${DEV}    ${N} ${ns[$q]} $((${seed})) ${REPEAT} ${met[$q]}`
-            #echo "./${BINARY} ${DEV}    ${N} ${ns[$q]} $((${seed}*${k})) ${REPEAT} ${met[$q]}"
+            value=`./${BINARY} ${DEV}    ${N} 0 ${SEED} ${REPEAT} ${DIST} 2`
             x="$(cut -d',' -f1 <<<"$value")"
             y="$(cut -d',' -f2 <<<"$value")"
             w="$(cut -d',' -f3 <<<"$value")"
@@ -66,6 +64,7 @@ do
             z1=$(echo "scale=10; $z1+$z" | bc)
             v1=$(echo "scale=10; $v1+$v" | bc)
             oldM=$M;
+            #echo "hola ${x}"
             M=$(echo "scale=10;  $M+($x-$M)/$k"           | bc)
             S=$(echo "scale=10;  $S+($x-$M)*($x-${oldM})" | bc)
         done
@@ -82,13 +81,15 @@ do
         y2=$(echo "scale=10; $y1/$SAMPLES" | bc)
         z2=$(echo "scale=10; $z1/$SAMPLES" | bc)
         v2=$(echo "scale=10; $v1/$SAMPLES" | bc)
-        echo "---> B=${B} N=${N} --> (MEAN, VAR, STDEV, STERR, SUM, CPUSUM,
-        DIFF, %DIFF) -> (${TMEAN[$q]}[ms], ${TVAR[$q]}, ${TSTDEV[$q]}, ${TSTERR[$q]}, ${y2}, ${w2}, ${z2}, ${v2})"
-        echo -n "${TMEAN[$q]} ${TVAR[$q]} ${TSTDEV[$q]} ${TSTERR[$q]} ${y} ${w} ${z} ${v}        " >> data/${OUTFILE}.dat
+        echo "---> B=${B} N=${N} R=${R} --> (MEAN, VAR, STDEV, STERR, SUM, CPUSUM, DIFF, %DIFF) -> (${TMEAN[$q]}[ms], ${TVAR[$q]}, ${TSTDEV[$q]}, ${TSTERR[$q]}, ${y2}, ${w2}, ${z2}, ${v2})"
+        echo -n "${TMEAN[$q]} ${TVAR[$q]} ${TSTDEV[$q]} ${TSTERR[$q]} ${y} ${w} ${z} ${v}        " >> ../data/${OUTFILE}_${DISTRIBUTION[$DIST]}.dat
         echo " "
     done
-    echo " " >> data/${OUTFILE}.dat
+    echo " " >> ../data/${OUTFILE}_${DISTRIBUTION[$DIST]}.dat
     echo " "
     echo " "
     echo " "
 done 
+
+
+

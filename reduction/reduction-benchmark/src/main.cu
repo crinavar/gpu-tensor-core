@@ -213,8 +213,8 @@ int main(int argc, char **argv){
         float tc_blocks = (n*(1-factor_ns) + DIFF -1)/(DIFF);
         //float tc_blocks = n*0.5/(DIFF);
         grid = dim3((int)tc_blocks + ns_blocks, 1, 1);
-        //printf("grid (%i, %i, %i)    block(%i, %i, %i)  DIFF %i\n", grid.x, grid.y, grid.z, block.x, block.y, block.z,DIFF);
-        //printf("ns_blocks %i, tc_blocks %i\n",ns_blocks,(int)tc_blocks);
+        printf("grid (%i, %i, %i)    block(%i, %i, %i)  DIFF %i\n", grid.x, grid.y, grid.z, block.x, block.y, block.z,DIFF);
+        printf("ns_blocks %i, tc_blocks %i\n",ns_blocks,(int)tc_blocks);
         for(int i=0; i<REPEATS; ++i){
             cudaMemset(outd, 0, sizeof(REAL)*1);
             kernel_reduction_tc_mixed<<<grid, block>>>(n, Adh, outd, tc_blocks, ns_blocks);  CUERR;
