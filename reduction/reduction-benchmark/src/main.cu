@@ -259,8 +259,8 @@ int main(int argc, char **argv){
         int tc_blocks = (ntc + TCSQ*bs - 1)/(TCSQ*bs);
         grid = dim3(tc_blocks + ns_blocks, 1, 1);
         #ifdef DEBUG
-            //printf("grid (%i, %i, %i)    block(%i, %i, %i)  DIFF %i\n", grid.x, grid.y, grid.z, block.x, block.y, block.z,DIFF);
             printf("ns_blocks %i, tc_blocks %i\n", ns_blocks, tc_blocks);
+            printf("grid (%i, %i, %i)    block(%i, %i, %i)  DIFF %i\n", grid.x, grid.y, grid.z, block.x, block.y, block.z,DIFF);
         #endif
         for(int i=0; i<REPEATS; ++i){
             cudaMemset(outd, 0, sizeof(REAL)*1);

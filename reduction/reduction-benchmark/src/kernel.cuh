@@ -44,11 +44,12 @@ __inline__ __device__ REAL warp_shuffle_reduction_real(REAL val){
 
 // kernel
 //__global__ void tc_reduction(half* A, int n){
-__inline__ __device__ half reduction_tc_warp(int N, half *A, int offset, int lane, int warpoff){
+__inline__ __device__ REAL reduction_tc_warp(int N, half *A, int offset, int lane, int warpoff){
     // definicion de offset y fragmentos
     wmma::fragment<wmma::matrix_a, WMMA_M, WMMA_N, WMMA_K, half, wmma::row_major> a_frag;
     wmma::fragment<wmma::matrix_b, WMMA_M, WMMA_N, WMMA_K, half, wmma::row_major> b_frag;
     wmma::fragment<wmma::accumulator, WMMA_M, WMMA_N, WMMA_K, half> d_frag;
+    wmma::fragment<wmma::accumulator, WMMA_M, WMMA_N, WMMA_K, REAL> r_frag;
     
     // (1) cargar datos de memoria global a A, B y C frags
     wmma::fill_fragment(a_frag, 1.0f);
@@ -85,13 +86,13 @@ __inline__ __device__ half reduction_tc_warp(int N, half *A, int offset, int lan
 
 
     //// (4) MMA
-    wmma::mma_sync(d_frag, a_frag, b_frag, d_frag);
+    wmma::mma_sync(r_frag, a_frag, b_frag, d_frag);
 
     // (5) Almacenar resultado
     if(lane == 0){
         //printf("block: %i, val %f\n",blockIdx.x,(float)d_frag.x[0]);
         //printf("%f\n",(float)d_frag.x[0]);
-        return d_frag.x[0];
+        return r_frag.x[0];
         //return 1.0f;
     }
     else return 0.0f;
@@ -104,6 +105,7 @@ __inline__ __device__ REAL block_reduce_tc(int N, half *a, int offset){
 	//int wid = tid/WARPSIZE;
 	int wid = tid >> 5;
 	REAL val = reduction_tc_warp(N, a, offset + wid*TCSQ*R, lane, wid << 8);
+    //return val;
 	if(lane == 0){
 		shared[wid] = val;
     }
@@ -116,6 +118,7 @@ __inline__ __device__ REAL block_reduce_tc(int N, half *a, int offset){
     }
 	return val;
 }
+
  __inline__ __device__ half block_reduce_shuffle(half val){
      __shared__ half shared[WARPSIZE];
      int tid = threadIdx.x;
@@ -133,17 +136,33 @@ __inline__ __device__ REAL block_reduce_tc(int N, half *a, int offset){
      return val;
  }
 
+
+
+
+
+
+
 __global__ void kernel_reduction_tc_blockshuffle(half *a, float *out, int N,int bs){
 	//int offset = blockIdx.x * TCSQ * 32;       
 	int offset = blockIdx.x * (bs * TCSQ * R); 
 	if(offset < N){
 		REAL sumf = block_reduce_tc(N, a, offset);
+        //if((threadIdx.x & 31) == 0){
+        //    //printf("offset %i \n",offset);
+        //    atomicAdd(out, sumf);
+        //}
         if(threadIdx.x == 0){
             //printf("offset %i \n",offset);
             atomicAdd(out, sumf);
         }
 	}
 }
+
+
+
+
+
+
 __global__ void kernel_reduction_tc_mixed(int N, half *a, float *out, int bntc, int bns){
     REAL sum=0;
     int offset_tc = (blockIdx.x)*DIFF;
@@ -169,6 +188,18 @@ __global__ void kernel_reduction_tc_mixed(int N, half *a, float *out, int bntc, 
         atomicAdd(out, sum);
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
 
 __global__ void kernel_reduction_tc_theory(half* A, half* outd_m0, int n){
     __shared__ half lastmat[256];
