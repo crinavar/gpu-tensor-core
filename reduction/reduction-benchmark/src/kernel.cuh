@@ -30,9 +30,15 @@ __global__ void convertFp16ToFp32 (float *out, half *in, int n) {
         out[idx] = in[idx];
     }
 }
-__inline__ __device__ half shuffle_reduction(half val){
+__inline__ __device__ half warp_shuffle_reduction_half(half val){
 	for (int offset = WARPSIZE >> 1; offset > 0; offset >>= 1)
         val += __shfl_down_sync(0xFFFF, val, offset, WARPSIZE);
+    return val;
+}
+
+__inline__ __device__ REAL warp_shuffle_reduction_real(REAL val){
+	for (int offset = WARPSIZE >> 1; offset > 0; offset >>= 1)
+        val += __shfl_down_sync(0xFFFFFFFF, val, offset, WARPSIZE);
     return val;
 }
 
@@ -91,8 +97,8 @@ __inline__ __device__ half reduction_tc_warp(int N, half *A, int offset, int lan
     else return 0.0f;
 }
 
-__inline__ __device__ half block_reduce_tc(int N, half *a, int offset){
-	__shared__ half shared[WARPSIZE];
+__inline__ __device__ REAL block_reduce_tc(int N, half *a, int offset){
+	__shared__ REAL shared[WARPSIZE];
 	int tid = threadIdx.x;
 	int lane = tid & (WARPSIZE-1);
 	//int wid = tid/WARPSIZE;
@@ -104,25 +110,25 @@ __inline__ __device__ half block_reduce_tc(int N, half *a, int offset){
 	__syncthreads();
 	//val = (tid < blockDim.x/WARPSIZE) ? shared[lane] : (REAL) 0.0f;
     //printf("thread %i val %f\n", threadIdx.x, val);
-	val = (tid < (blockDim.x >> 5)) ? shared[lane] : (half) 0.0f;
+	val = (tid < (blockDim.x >> 5)) ? shared[lane] : 0.0f;
 	if(wid == 0){
-        val = shuffle_reduction(val);
+        val = warp_shuffle_reduction_real(val);
     }
 	return val;
 }
  __inline__ __device__ half block_reduce_shuffle(half val){
-     static __shared__ half shared[WARPSIZE];
+     __shared__ half shared[WARPSIZE];
      int tid = threadIdx.x;
      int lane = tid & (WARPSIZE-1);
      int wid = tid/WARPSIZE;
-     val = shuffle_reduction(val);
+     val = warp_shuffle_reduction_half(val);
      if(lane == 0)
          shared[wid] = val;
  
      __syncthreads();
-     val = (tid < blockDim.x/WARPSIZE) ? shared[lane] : (half) 0.f;
+     val = (tid < blockDim.x/WARPSIZE) ? shared[lane] : (half) 0.0f;
      if(wid == 0){
-        val = shuffle_reduction(val);
+        val = warp_shuffle_reduction_real(val);
      }
      return val;
  }
@@ -131,7 +137,7 @@ __global__ void kernel_reduction_tc_blockshuffle(half *a, float *out, int N,int 
 	//int offset = blockIdx.x * TCSQ * 32;       
 	int offset = blockIdx.x * (bs * TCSQ * R); 
 	if(offset < N){
-		half sumf = block_reduce_tc(N, a, offset);
+		REAL sumf = block_reduce_tc(N, a, offset);
         if(threadIdx.x == 0){
             //printf("offset %i \n",offset);
             atomicAdd(out, sumf);
@@ -139,7 +145,7 @@ __global__ void kernel_reduction_tc_blockshuffle(half *a, float *out, int N,int 
 	}
 }
 __global__ void kernel_reduction_tc_mixed(int N, half *a, float *out, int bntc, int bns){
-    half sum=0;
+    REAL sum=0;
     int offset_tc = (blockIdx.x)*DIFF;
     if(blockIdx.x < bntc){
         sum = block_reduce_tc(N, a, offset_tc);
@@ -314,9 +320,9 @@ __global__ void kernel_reduction_shuffle(half *A, float *out, int n){
      int off = blockIdx.x * blockDim.x + threadIdx.x;
      if(off < n){
          half sum = A[off];
-         sum = block_reduce_shuffle(sum);
+         float rsum = block_reduce_shuffle(sum);
          if(threadIdx.x == 0){
-             atomicAdd(out, sum);
+             atomicAdd(out, rsum);
          }
      }
  }

@@ -75,7 +75,11 @@ void printmats(REAL *m, int n, const char *msg){
 int main(int argc, char **argv){
     // params
     if(argc != 8){
-        fprintf(stderr, "run as ./prog dev n factor_ns seed REPEATS dist method\n");
+        fprintf(stderr, "run as ./prog dev n factor_ns seed REPEATS dist method\nmethod:\
+        \n0 -> shuffle\
+        \n1 -> theory recursive\
+        \n2 -> tensor_shuffle\
+        \n3 -> mixed\n\n");
         exit(EXIT_FAILURE);
     }
     int dev = atoi(argv[1]);
@@ -139,46 +143,60 @@ int main(int argc, char **argv){
     cudaEventCreate(&stop);
     cudaEventRecord(start);
     
-    if(method == 1){
-        if(n<=524288){
-        //printf("reduction_tc_theory (cooperative groups)\n");
-        void *kernelArgs[3];
-        kernelArgs[0]= (void*)&Adh;
-        kernelArgs[1]= (void*)&outd_m0;
-        kernelArgs[2]= (void*)&n;
+    if(method == 0){
+        printf("SHUFFLE (BSIZE = %i)\n", BSIZE);
         block = dim3(BSIZE, 1, 1);
-        grid = dim3((n + DIFF -1)/(DIFF),1,1) ;//dim3((n + 255)/TCSQ, 1, 1);
-        //printf("grid (%i, %i, %i)    block(%i, %i, %i)\n", grid.x, grid.y, grid.z, block.x, block.y, block.z);
-        //kernel_reduction_tc_theory<<<grid, block>>>(Adh, outd_m0, n);
+        grid = dim3((n + BSIZE -1)/BSIZE, 1, 1);
         for(int i=0; i<REPEATS; ++i){
-            cudaMemset(outd_m0, 0, sizeof(REAL)*1);
-            cudaLaunchCooperativeKernel((void *) kernel_reduction_tc_theory,grid,block,kernelArgs,NULL);  CUERR;
+            cudaMemset(outd, 0, sizeof(REAL)*1);
+            kernel_reduction_shuffle<<<grid, block>>>(Adh, outd, n);  CUERR;
             cudaDeviceSynchronize();
         }
         cudaEventRecord(stop);
         cudaEventSynchronize(stop);
-        cudaMemcpy(&z, outd_m0, sizeof(half)*1, cudaMemcpyDeviceToHost);
-        *out = (float)z;
-        //cudaMemcpy(out, outd, sizeof(half)*1, cudaMemcpyDeviceToHost);
-        /*n = ((n + TCSQ-1)/TCSQ) * TCSQ;
-        grid = dim3((n + TCSQ-1)/TCSQ, 1, 1);
-        while(n > 1){
-            kernel_reduction_tc_theory<<<grid, block>>>(outd_m0, outd_m0, n);
-            // para n generico: actualizar n --> nuevo n 'paddeado' y mas chico
-            n = ((n + TCSQ-1)/TCSQ) * TCSQ;
-            // para n potencias de TCSQ 
-            //n = n/256;
-            // n/TCSQ
-            grid = dim3((n + TCSQ-1)/TCSQ, 1, 1);
+        cudaMemcpy(out, outd, sizeof(float)*1, cudaMemcpyDeviceToHost);
+    }
+    else if(method == 1){
+        printf("THEORY RECURSIVE (BSIZE =%i)\n", BSIZE);
+        if(n<=524288){
+            //printf("reduction_tc_theory (cooperative groups)\n");
+            void *kernelArgs[3];
+            kernelArgs[0]= (void*)&Adh;
+            kernelArgs[1]= (void*)&outd_m0;
+            kernelArgs[2]= (void*)&n;
+            block = dim3(BSIZE, 1, 1);
+            grid = dim3((n + DIFF -1)/(DIFF),1,1) ;//dim3((n + 255)/TCSQ, 1, 1);
             //printf("grid (%i, %i, %i)    block(%i, %i, %i)\n", grid.x, grid.y, grid.z, block.x, block.y, block.z);
-            //printf("n: %i, grid: %i, %i, %i\n",n,grid.x,grid.y,grid.z);
-            //printmats(A, n, "[after] mat D:");
-        }
-        n=on;
-        //grid = dim3((n + 256 - 1)/TCSQ, 1, 1);
-        //cudaMemcpy(Ad, A, sizeof(REAL)*n, cudaMemcpyDeviceToHost);    
-        //printf("D: %f\n",(float)A[0]);
-    */
+            //kernel_reduction_tc_theory<<<grid, block>>>(Adh, outd_m0, n);
+            for(int i=0; i<REPEATS; ++i){
+                cudaMemset(outd_m0, 0, sizeof(REAL)*1);
+                cudaLaunchCooperativeKernel((void *) kernel_reduction_tc_theory,grid,block,kernelArgs,NULL);  CUERR;
+                cudaDeviceSynchronize();
+            }
+            cudaEventRecord(stop);
+            cudaEventSynchronize(stop);
+            cudaMemcpy(&z, outd_m0, sizeof(half)*1, cudaMemcpyDeviceToHost);
+            *out = (float)z;
+            //cudaMemcpy(out, outd, sizeof(half)*1, cudaMemcpyDeviceToHost);
+            /*n = ((n + TCSQ-1)/TCSQ) * TCSQ;
+            grid = dim3((n + TCSQ-1)/TCSQ, 1, 1);
+            while(n > 1){
+                kernel_reduction_tc_theory<<<grid, block>>>(outd_m0, outd_m0, n);
+                // para n generico: actualizar n --> nuevo n 'paddeado' y mas chico
+                n = ((n + TCSQ-1)/TCSQ) * TCSQ;
+                // para n potencias de TCSQ 
+                //n = n/256;
+                // n/TCSQ
+                grid = dim3((n + TCSQ-1)/TCSQ, 1, 1);
+                //printf("grid (%i, %i, %i)    block(%i, %i, %i)\n", grid.x, grid.y, grid.z, block.x, block.y, block.z);
+                //printf("n: %i, grid: %i, %i, %i\n",n,grid.x,grid.y,grid.z);
+                //printmats(A, n, "[after] mat D:");
+            }
+            n=on;
+            //grid = dim3((n + 256 - 1)/TCSQ, 1, 1);
+            //cudaMemcpy(Ad, A, sizeof(REAL)*n, cudaMemcpyDeviceToHost);    
+            //printf("D: %f\n",(float)A[0]);
+            */
         }
         else{
             printf("0,0,0,0,0\n");
@@ -192,6 +210,7 @@ int main(int argc, char **argv){
         }
     }
     if(method == 2){
+        printf("TENSOR SHUFFLE (CHAIN R=%i, BSIZE = %i)\n", R, BSIZE);
         //printf("reduction_tc_blockshuffle\n");
         block = dim3(TCSIZE*2*bs, 1, 1);
         grid = dim3((n + (TCSQ*bs*(R)) - 1)/(TCSQ*bs*(R)), 1, 1);
@@ -206,6 +225,7 @@ int main(int argc, char **argv){
         cudaMemcpy(out, outd, sizeof(float)*1, cudaMemcpyDeviceToHost);
     }
     if(method == 3){
+        printf("MIXED (BSIZE = %i)\n", BSIZE);
         //printf("reduction_tc_mixed\n");
         block = dim3(BSIZE, 1, 1);
         int ns_blocks = (factor_ns*n + BSIZE-1)/BSIZE;
@@ -224,18 +244,6 @@ int main(int argc, char **argv){
         cudaEventSynchronize(stop);
         cudaMemcpy(out, outd, sizeof(float)*1, cudaMemcpyDeviceToHost);
     }        
-    if(method == 0){
-        block = dim3(BSIZE, 1, 1);
-        grid = dim3((n + BSIZE -1)/BSIZE, 1, 1);
-        for(int i=0; i<REPEATS; ++i){
-            cudaMemset(outd, 0, sizeof(REAL)*1);
-            kernel_reduction_shuffle<<<grid, block>>>(Adh, outd, n);  CUERR;
-            cudaDeviceSynchronize();
-        }
-        cudaEventRecord(stop);
-        cudaEventSynchronize(stop);
-        cudaMemcpy(out, outd, sizeof(float)*1, cudaMemcpyDeviceToHost);
-    }
     float time = 0.0f;
     cudaEventElapsedTime(&time, start, stop);
     float cpusum = gold_reduction(A, n);
