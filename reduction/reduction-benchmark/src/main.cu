@@ -16,6 +16,8 @@
 #define DIFF (BSIZE<<3)
 #include "kernel.cuh"
 
+#define DEBUG
+
 void init_normal(REAL *m, long n, const int val, int seed){
     //srand(seed);
     std::mt19937 gen{seed};
@@ -82,6 +84,7 @@ int main(int argc, char **argv){
         \n3 -> mixed\n\n");
         exit(EXIT_FAILURE);
     }
+    const char* methods[4] = {"SHUFFLE", "THEORY RECURSIVE", "TENSOR-SHUFFLE CHAINED", "MIXED"};
     int dev = atoi(argv[1]);
     int on = atoi(argv[2]);
     int n = on;
@@ -92,7 +95,18 @@ int main(int argc, char **argv){
     int method = atoi(argv[7]);
 
 #ifdef DEBUG
-    printf("n=%i factor_ns=%i dev=%i  rand_seed = %i  REPEATS = %i  TCSIZE=%i method=%i\n", n, factor_ns, dev, seed, REPEATS, TCSIZE, method);
+    printf("\n\
+            ***************************\n\
+            method=%s\n\
+            dev = %i\n\
+            n=%i\n\
+            factor_ns=%f\n\
+            prng_seed = %i\n\
+            KERNEL_REPEATS = %i\n\
+            TCSIZE=%i\n\
+            R = %i\n\
+            BSIZE = %i\n\
+            ***************************\n\n", methods[method], dev, n, factor_ns, seed, REPEATS, TCSIZE, R, BSIZE);
 #endif
     
     // set device
@@ -132,7 +146,8 @@ int main(int argc, char **argv){
     dim3 block, grid;
     //block = dim3(TCSIZE*2, 1, 1);
     //grid = dim3((n + 256 - 1)/TCSQ, 1, 1);
-    int bs = BSIZE/(TCSIZE*2);
+    //int bs = BSIZE/(TCSIZE*2);
+    int bs = BSIZE/WARPSIZE;
     
     //block = dim3(TCSIZE*2*bs, 1, 1);
     //grid = dim3((n + (TCSQ*bs*(R)) - 1)/(TCSQ*bs*(R)), 1, 1);
@@ -144,7 +159,9 @@ int main(int argc, char **argv){
     cudaEventRecord(start);
     
     if(method == 0){
-        printf("SHUFFLE (BSIZE = %i)\n", BSIZE);
+        #ifdef DEBUG
+            printf("SHUFFLE (BSIZE = %i)\n", BSIZE);
+        #endif
         block = dim3(BSIZE, 1, 1);
         grid = dim3((n + BSIZE -1)/BSIZE, 1, 1);
         for(int i=0; i<REPEATS; ++i){
@@ -157,7 +174,9 @@ int main(int argc, char **argv){
         cudaMemcpy(out, outd, sizeof(float)*1, cudaMemcpyDeviceToHost);
     }
     else if(method == 1){
-        printf("THEORY RECURSIVE (BSIZE =%i)\n", BSIZE);
+        #ifdef DEBUG
+            printf("THEORY RECURSIVE (BSIZE =%i)\n", BSIZE);
+        #endif
         if(n<=524288){
             //printf("reduction_tc_theory (cooperative groups)\n");
             void *kernelArgs[3];
@@ -210,11 +229,16 @@ int main(int argc, char **argv){
         }
     }
     if(method == 2){
-        printf("TENSOR SHUFFLE (CHAIN R=%i, BSIZE = %i)\n", R, BSIZE);
+        #ifdef DEBUG
+            printf("TENSOR SHUFFLE (CHAIN R=%i, BSIZE = %i)\n", R, BSIZE);
+        #endif
         //printf("reduction_tc_blockshuffle\n");
-        block = dim3(TCSIZE*2*bs, 1, 1);
+        //block = dim3(TCSIZE*2*bs, 1, 1);
+        block = dim3(BSIZE, 1, 1);
         grid = dim3((n + (TCSQ*bs*(R)) - 1)/(TCSQ*bs*(R)), 1, 1);
-        printf("grid (%i, %i, %i)    block(%i, %i, %i)\n", grid.x, grid.y, grid.z, block.x, block.y, block.z);
+        #ifdef DEBUG
+            printf("grid (%i, %i, %i)    block(%i, %i, %i)\n", grid.x, grid.y, grid.z, block.x, block.y, block.z);
+        #endif
         for(int i=0; i<REPEATS; ++i){
             cudaMemset(outd, 0, sizeof(REAL)*1);
             kernel_reduction_tc_blockshuffle<<<grid, block>>>(Adh, outd, n,bs);
@@ -225,16 +249,19 @@ int main(int argc, char **argv){
         cudaMemcpy(out, outd, sizeof(float)*1, cudaMemcpyDeviceToHost);
     }
     if(method == 3){
-        printf("MIXED (BSIZE = %i)\n", BSIZE);
-        //printf("reduction_tc_mixed\n");
+        #ifdef DEBUG
+            printf("MIXED (BSIZE = %i)\n", BSIZE);
+        #endif
         block = dim3(BSIZE, 1, 1);
-        int ns_blocks = (factor_ns*n + BSIZE-1)/BSIZE;
-        //printf("s_block %i\n",ns_blocks);
-        float tc_blocks = (n*(1-factor_ns) + DIFF -1)/(DIFF);
-        //float tc_blocks = n*0.5/(DIFF);
-        grid = dim3((int)tc_blocks + ns_blocks, 1, 1);
-        //printf("grid (%i, %i, %i)    block(%i, %i, %i)  DIFF %i\n", grid.x, grid.y, grid.z, block.x, block.y, block.z,DIFF);
-        //printf("ns_blocks %i, tc_blocks %i\n",ns_blocks,(int)tc_blocks);
+        long nsh = (long)ceil(factor_ns*n);
+        long ntc = n - nsh;
+        int ns_blocks = (nsh + BSIZE-1)/BSIZE;
+        int tc_blocks = (ntc + TCSQ*bs - 1)/(TCSQ*bs);
+        grid = dim3(tc_blocks + ns_blocks, 1, 1);
+        #ifdef DEBUG
+            //printf("grid (%i, %i, %i)    block(%i, %i, %i)  DIFF %i\n", grid.x, grid.y, grid.z, block.x, block.y, block.z,DIFF);
+            printf("ns_blocks %i, tc_blocks %i\n", ns_blocks, tc_blocks);
+        #endif
         for(int i=0; i<REPEATS; ++i){
             cudaMemset(outd, 0, sizeof(REAL)*1);
             kernel_reduction_tc_mixed<<<grid, block>>>(n, Adh, outd, tc_blocks, ns_blocks);  CUERR;
@@ -247,16 +274,20 @@ int main(int argc, char **argv){
     float time = 0.0f;
     cudaEventElapsedTime(&time, start, stop);
     float cpusum = gold_reduction(A, n);
-    //printf("gpu: %f\ncpu: %f \ndiff = %f (%f%%)\n", (float)*out, cpusum, fabs((float)*out - cpusum), 100.0f*fabs((float)*out - cpusum)/cpusum);
-    /*/printf("%f \n",(n/(time/1000.0f))/1000000000.0f);
-    printf("%f\n", time/(REPEATS));*/
-    printf("%f,%f,%f,%f,%f\n",time/(REPEATS),(float)*out,cpusum,fabs((float)*out
-                - cpusum),fabs(100.0f*fabs((float)*out - cpusum)/cpusum));
-    /*if(n < PRINTLIMIT){
-       printmats(A, on, "A final:");
-    }*/
-    //printarray(A, 1, "D_final: ");
-    //printf("%i\n",DIFF);
+
+    #ifdef DEBUG
+        //printf("gpu: %f\ncpu: %f \ndiff = %f (%f%%)\n", (float)*out, cpusum, fabs((float)*out - cpusum), 100.0f*fabs((float)*out - cpusum)/cpusum);
+        /*/printf("%f \n",(n/(time/1000.0f))/1000000000.0f);
+        printf("%f\n", time/(REPEATS));*/
+    #endif
+        printf("%f,%f,%f,%f,%f\n",time/(REPEATS),(float)*out,cpusum,fabs((float)*out - cpusum),fabs(100.0f*fabs((float)*out - cpusum)/cpusum));
+    #ifdef DEBUG
+        /*if(n < PRINTLIMIT){
+           printmats(A, on, "A final:");
+        }*/
+        //printarray(A, 1, "D_final: ");
+        //printf("%i\n",DIFF);
+    #endif
     free(A);
     free(out);
     cudaFree(Ad);
