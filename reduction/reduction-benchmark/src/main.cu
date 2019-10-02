@@ -37,8 +37,8 @@ void init_uniform(REAL *m, long n, const int val, int seed){
     }
 }
 
-float gold_reduction(REAL *m, long n){
-    float sum = 0.0f;
+double gold_reduction(REAL *m, long n){
+    double sum = 0.0f;
     for(long k=0; k<n; ++k){
         sum += m[k];
     }
@@ -86,8 +86,8 @@ int main(int argc, char **argv){
     }
     const char* methods[4] = {"SHUFFLE", "THEORY RECURSIVE", "TENSOR-SHUFFLE CHAINED", "MIXED"};
     int dev = atoi(argv[1]);
-    int on = atoi(argv[2]);
-    int n = on;
+    long on = atoi(argv[2]);
+    long n = on;
     float factor_ns = atof(argv[3]);
     int seed = atoi(argv[4]);
     int REPEATS = atoi(argv[5]);
@@ -273,7 +273,7 @@ int main(int argc, char **argv){
     }        
     float time = 0.0f;
     cudaEventElapsedTime(&time, start, stop);
-    float cpusum = gold_reduction(A, n);
+    double cpusum = gold_reduction(A, n);
 
     #ifdef DEBUG
         //printf("gpu: %f\ncpu: %f \ndiff = %f (%f%%)\n", (float)*out, cpusum, fabs((float)*out - cpusum), 100.0f*fabs((float)*out - cpusum)/cpusum);
