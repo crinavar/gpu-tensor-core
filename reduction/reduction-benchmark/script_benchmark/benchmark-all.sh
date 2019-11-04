@@ -14,7 +14,7 @@ SAMPLES=$8
 BINARY=${9}
 OUTFILE=${10}
 METHODS=("tc_block" "cub_16" "cub_32" "shuffle")
-DISTRIBUTION=("normal" "uniform")
+DISTRIBUTION=("Normal" "Uniform")
 NM=$((${#METHODS[@]}-1))
 TMEAN[0]=0
 TVAR[0]=0
@@ -58,13 +58,13 @@ do
         do
             case "$q" in
                 #case 1
-                "0") value=`./src/${BINARY} ${DEV}    ${N} 0 ${SEED} ${REPEAT} ${DIST} 2`;;
+                "0") value=`./${BINARY} ${DEV}    ${N} 0 ${SEED} ${REPEAT} ${DIST} 2`;;
                 #case 2
-                "1") value=`./src/${BINARY}_cub16 ${DEV} ${N} ${DIST} ${SEED} ${REPEAT}`;;
+                "1") value=`./${BINARY}_cub16 ${DEV} ${N} ${DIST} ${SEED} ${REPEAT}`;;
                 #case 3
-                "2") value=`./src/${BINARY}_cub32 ${DEV} ${N} ${DIST} ${SEED} ${REPEAT}`;;
+                "2") value=`./${BINARY}_cub32 ${DEV} ${N} ${DIST} ${SEED} ${REPEAT}`;;
                 #case 4
-                "3") value=`./src/${BINARY} ${DEV}    ${N} 0 ${SEED} ${REPEAT} ${DIST} 0`;;
+                "3") value=`./${BINARY} ${DEV}    ${N} 0 ${SEED} ${REPEAT} ${DIST} 0`;;
             esac
             #echo "$value"
             x="$(cut -d',' -f1 <<<"$value")"
@@ -93,8 +93,8 @@ do
         y2=$(echo "scale=10; $y1/$SAMPLES" | bc)
         z2=$(echo "scale=10; $z1/$SAMPLES" | bc)
         v2=$(echo "scale=10; $v1/$SAMPLES" | bc)
-        echo "---> B=${B} N=${N} --> (MEAN, VAR, STDEV, STERR, SUM, CPUSUM,
-        #DIFF, %DIFF) -> (${TMEAN[$q]}[ms], ${TVAR[$q]}, ${TSTDEV[$q]}, ${TSTERR[$q]}, ${y2}, ${w2}, ${z2}, ${v2})"
+        echo "---> B=${B} N=${N} --> (MEAN, VAR, STDEV, STERR, SUM, CPUSUM, #DIFF, %DIFF) 
+                -> (${TMEAN[$q]}[ms], ${TVAR[$q]}, ${TSTDEV[$q]}, ${TSTERR[$q]}, ${y2}, ${w2}, ${z2}, ${v2})"
         echo -n "${TMEAN[$q]} ${TVAR[$q]} ${TSTDEV[$q]} ${TSTERR[$q]} ${y} ${w} ${z} ${v}        " >> data/${OUTFILE}_${DISTRIBUTION[$DIST]}.dat
         echo " "
     done

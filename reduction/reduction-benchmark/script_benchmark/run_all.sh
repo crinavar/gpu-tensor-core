@@ -1,35 +1,86 @@
 #!/bin/bash
-cd ..
+
+DEV=$1
+GPU=("titanRTX" "titanV")
+
+cd /home/rcarrasco/tensor/gpu-tensor-core/reduction/reduction-benchmark/script_benchmark
 
 FECHA_INICIO=$(date +%s)
-./benchmark-all.sh 0 $((2**13)) $((2**24)) $((2**13)) 12 0 30 3 prog data_tintanRTX
+./pconf.sh ${DEV} 92252160 127 0 10 3 prog pconf_${GPU[${DEV}]}
 FECHA_FIN=$(date +%s)
-script_1=$(( $FECHA_FIN - $FECHA_INICIO ))
-echo "$script_1 " >> data/time.dat
+script_time=$(( $FECHA_FIN - $FECHA_INICIO ))
+echo "$script_time " >> ../data/time.dat
 
+cd /home/rcarrasco/tensor/gpu-tensor-core/reduction/reduction-benchmark/script_benchmark
 
 FECHA_INICIO=$(date +%s)
-./benchmark-all.sh 0 $((2**13)) $((2**24)) $((2**13)) 12 1 30 3 prog data_titanRTX
+./pconf.sh ${DEV} 92252160 127 1 10 3 prog pconf_${GPU[${DEV}]}
 FECHA_FIN=$(date +%s)
-script_2=$(( $FECHA_FIN - $FECHA_INICIO ))
-echo "$script_2 " >> data/time.dat
+script_time=$(( $FECHA_FIN - $FECHA_INICIO ))
+echo "$script_time " >> ../data/time.dat
 
+
+cd /home/rcarrasco/tensor/gpu-tensor-core/reduction/reduction-benchmark/script_benchmark
 
 FECHA_INICIO=$(date +%s)
-./benchmark-all.sh 1 $((2**13)) $((2**24)) $((2**13)) 12 0 30 3 prog data_titanV
+./rconf.sh ${DEV} 92252160 127 0 10 3 prog rconf_${GPU[${DEV}]}
 FECHA_FIN=$(date +%s)
-script_3=$(( $FECHA_FIN - $FECHA_INICIO ))
-echo "$script_3 " >> data/time.dat
+script_time=$(( $FECHA_FIN - $FECHA_INICIO ))
+echo "$script_time " >> ../data/time.dat
 
+cd /home/rcarrasco/tensor/gpu-tensor-core/reduction/reduction-benchmark/script_benchmark
 
 FECHA_INICIO=$(date +%s)
-./benchmark-all.sh 1 $((2**13)) $((2**24)) $((2**13)) 12 1 30 3 prog data_titan_V
+./rconf.sh ${DEV} 92252160 127 1 10 3 prog rconf_${GPU[${DEV}]}
 FECHA_FIN=$(date +%s)
-script_4=$(( $FECHA_FIN - $FECHA_INICIO ))
-echo "$script_4 " >> data/time.dat
+script_time=$(( $FECHA_FIN - $FECHA_INICIO ))
+echo "$script_time " >> ../data/time.dat
 
+cd /home/rcarrasco/tensor/gpu-tensor-core/reduction/reduction-benchmark/script_benchmark
 
-echo "$script_1"
-echo "$script_2"
-echo "$script_3"
-echo "$script_4"
+FECHA_INICIO=$(date +%s)
+./benchmark-theory.sh ${DEV} $((2**13)) $((2**19)) $((2**13)) 0 127 10 3 prog theory_${GPU[${DEV}]}
+FECHA_FIN=$(date +%s)
+script_time=$(( $FECHA_FIN - $FECHA_INICIO ))
+echo "$script_time " >> ../data/time.dat
+
+cd /home/rcarrasco/tensor/gpu-tensor-core/reduction/reduction-benchmark/script_benchmark
+
+FECHA_INICIO=$(date +%s)
+./benchmark-theory.sh ${DEV} $((2**13)) $((2**19)) $((2**13)) 1 127 10 3 prog theory_${GPU[${DEV}]}
+FECHA_FIN=$(date +%s)
+script_time=$(( $FECHA_FIN - $FECHA_INICIO ))
+echo "$script_time " >> ../data/time.dat
+
+cd /home/rcarrasco/tensor/gpu-tensor-core/reduction/reduction-benchmark/script_benchmark
+
+FECHA_INICIO=$(date +%s)
+./benchmark-block.sh ${DEV} $((2**19)) $((2**27)) $((2**19)) 0 127 10 3 prog block_${GPU[${DEV}]}
+FECHA_FIN=$(date +%s)
+script_time=$(( $FECHA_FIN - $FECHA_INICIO ))
+echo "$script_time " >> ../data/time.dat
+
+cd /home/rcarrasco/tensor/gpu-tensor-core/reduction/reduction-benchmark/script_benchmark
+
+FECHA_INICIO=$(date +%s)
+./benchmark-block.sh ${DEV} $((2**19)) $((2**27)) $((2**19)) 1 127 10 3 prog block_${GPU[${DEV}]}
+FECHA_FIN=$(date +%s)
+script_time=$(( $FECHA_FIN - $FECHA_INICIO ))
+echo "$script_time " >> ../data/time.dat
+
+cd /home/rcarrasco/tensor/gpu-tensor-core/reduction/reduction-benchmark/script_benchmark
+
+FECHA_INICIO=$(date +%s)
+./benchmark-our.sh ${DEV} $((2**19)) $((2**27)) $((2**19)) 0 127 10 3 prog our_${GPU[${DEV}]} 
+FECHA_FIN=$(date +%s)
+script_time=$(( $FECHA_FIN - $FECHA_INICIO ))
+echo "$script_time " >> ../data/time.dat
+
+cd /home/rcarrasco/tensor/gpu-tensor-core/reduction/reduction-benchmark/script_benchmark
+
+FECHA_INICIO=$(date +%s)
+./benchmark-our.sh ${DEV} $((2**19)) $((2**27)) $((2**19)) 1 127 10 3 prog our_${GPU[${DEV}]} 
+FECHA_FIN=$(date +%s)
+script_time=$(( $FECHA_FIN - $FECHA_INICIO ))
+echo "$script_time " >> ../data/time.dat
+

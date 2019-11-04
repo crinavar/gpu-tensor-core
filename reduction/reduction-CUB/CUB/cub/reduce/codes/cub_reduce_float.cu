@@ -75,10 +75,10 @@ CachingDeviceAllocator  g_allocator(true);  // Caching allocator for device memo
 
 
 
-float Initialize_normal(float *h_in, int num_items, int seed)
+double Initialize_normal(float *h_in, int num_items, int seed)
 {
      //srand(412);
-     float inclusive = 0.0;
+     double inclusive = 0.0;
      //std::random_device rd;
      std::mt19937 gen{seed};
      std::normal_distribution<> d{0,1};
@@ -100,12 +100,12 @@ float Initialize_normal(float *h_in, int num_items, int seed)
      return inclusive;
 }
 
-float Initialize_uniform(float *h_in, int num_items, int seed)
+double Initialize_uniform(float *h_in, int num_items, int seed)
  {
     //srand(12);
     std::mt19937 gen(seed);
     std::uniform_real_distribution<> d(0, 1);
-    float inclusive = 0.0;
+    double inclusive = 0.0;
     for (int i = 0; i < num_items; ++i)
     {
         h_in[i] = (float) d(gen);
@@ -169,7 +169,7 @@ int main(int argc, char** argv)
 
 
     // Initialize problem and solution
-    float  h_reference;
+    double  h_reference;
     if (dist==0){
         h_reference = Initialize_normal(h_in, num_items,seed);
     }

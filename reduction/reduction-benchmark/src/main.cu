@@ -16,7 +16,7 @@
 #define DIFF (BSIZE<<3)
 #include "kernel.cuh"
 
-#define DEBUG
+//#define DEBUG
 
 void init_normal(REAL *m, long n, const int val, int seed){
     //srand(seed);
@@ -84,7 +84,6 @@ int main(int argc, char **argv){
         \n3 -> mixed\n\n");
         exit(EXIT_FAILURE);
     }
-    const char* methods[4] = {"SHUFFLE", "THEORY RECURSIVE", "TENSOR-SHUFFLE CHAINED", "MIXED"};
     int dev = atoi(argv[1]);
     long on = atoi(argv[2]);
     long n = on;
@@ -95,6 +94,7 @@ int main(int argc, char **argv){
     int method = atoi(argv[7]);
 
 #ifdef DEBUG
+    const char* methods[4] = {"SHUFFLE", "THEORY RECURSIVE", "TENSOR-SHUFFLE CHAINED", "MIXED"};
     printf("\n\
             ***************************\n\
             method=%s\n\
