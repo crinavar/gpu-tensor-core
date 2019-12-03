@@ -22,16 +22,16 @@ TSTDEV[0]=0
 TSTERR[0]=0
 #seed=12
 
-echo "Benchmarking for B=256"
+echo "Benchmarking for B=32"
 #echo "Compiling with BSIZE=256"
-LB=256
-cd ..
-#COMPILE=`make BSIZE=${LB} R=1`
+LB=32
+cd ../src
+COMPILE=`make BSIZE=${LB} R=1`
 
 for N in `seq ${STARTN} ${DN} ${ENDN}`;
 do
     #echo "DEV=${DEV}  N=${N} B=${B}"
-    echo -n "${N}   ${B}    " >> data/${OUTFILE}_${DISTRIBUTION[$DIST]}.dat
+    echo -n "${N}   ${B}    " >> ../data/${OUTFILE}_${DISTRIBUTION[$DIST]}.dat
     for q in `seq 0 ${NM}`;
     do
         #echo $N
@@ -58,13 +58,17 @@ do
         do
             case "$q" in
                 #case 1
-                "0") value=`./${BINARY} ${DEV}    ${N} 0 ${SEED} ${REPEAT} ${DIST} 2`;;
+                "0") 
+                COMPILE=`make BSIZE=32 R=4`;
+                value=`./${BINARY} ${DEV}    ${N} 0 ${SEED} ${REPEAT} ${DIST} 2`;;
                 #case 2
                 "1") value=`./${BINARY}_cub16 ${DEV} ${N} ${DIST} ${SEED} ${REPEAT}`;;
                 #case 3
                 "2") value=`./${BINARY}_cub32 ${DEV} ${N} ${DIST} ${SEED} ${REPEAT}`;;
                 #case 4
-                "3") value=`./${BINARY} ${DEV}    ${N} 0 ${SEED} ${REPEAT} ${DIST} 0`;;
+                "3") 
+                COMPILE=`make BSIZE=512 R=1`
+                value=`./${BINARY} ${DEV}    ${N} 0 ${SEED} ${REPEAT} ${DIST} 0`;;
             esac
             #echo "$value"
             x="$(cut -d',' -f1 <<<"$value")"
@@ -95,10 +99,10 @@ do
         v2=$(echo "scale=10; $v1/$SAMPLES" | bc)
         echo "---> B=${B} N=${N} --> (MEAN, VAR, STDEV, STERR, SUM, CPUSUM, #DIFF, %DIFF) 
                 -> (${TMEAN[$q]}[ms], ${TVAR[$q]}, ${TSTDEV[$q]}, ${TSTERR[$q]}, ${y2}, ${w2}, ${z2}, ${v2})"
-        echo -n "${TMEAN[$q]} ${TVAR[$q]} ${TSTDEV[$q]} ${TSTERR[$q]} ${y} ${w} ${z} ${v}        " >> data/${OUTFILE}_${DISTRIBUTION[$DIST]}.dat
+        echo -n "${TMEAN[$q]} ${TVAR[$q]} ${TSTDEV[$q]} ${TSTERR[$q]} ${y} ${w} ${z} ${v}        " >> ../data/${OUTFILE}_${DISTRIBUTION[$DIST]}.dat
         echo " "
     done
-    echo " " >> data/${OUTFILE}_${DISTRIBUTION[$DIST]}.dat
+    echo " " >> ../data/${OUTFILE}_${DISTRIBUTION[$DIST]}.dat
     echo " "
     echo " "
     echo " "
