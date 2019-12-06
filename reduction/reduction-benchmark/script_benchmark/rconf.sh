@@ -1,16 +1,17 @@
 #!/bin/bash
-if [ "$#" -ne 8 ]; then
-    echo "run as ./benchmark-blockconf.sh    DEV    N  SEED   DIST   KREPEATS SAMPLES BINARY OUTFILE"
+if [ "$#" -ne 9 ]; then
+    echo "run as ./benchmark-blockconf.sh    DEV  ARCH  N  SEED   DIST   KREPEATS SAMPLES BINARY OUTFILE"
     exit;
 fi
 DEV=$1
-N=$2
-SEED=$3
-DIST=$4
-REPEAT=$5
-SAMPLES=$6
-BINARY=${7}
-OUTFILE=${8}
+ARCH=$2
+N=$3
+SEED=$4
+DIST=$5
+REPEAT=$6
+SAMPLES=$7
+BINARY=${8}
+OUTFILE=${9}
 METHODS=("tc_block" "cub_16" "cub_32" "shuffle")
 DISTRIBUTION=("normal" "uniform")
 NM=$((${#METHODS[@]}-1))
@@ -21,20 +22,22 @@ TSTERR[0]=0
 STARTB=32
 DB=32
 ENDDB=1024
-
+RARRAY=(1, 2, 4, 6, 8, 10, 12, 14, 16, 20, 24, 28, 32, 40, 48, 56, 64, 72, 80, 88, 96, 104, 112, 120, 128)
 cd ../src
 #for B in `seq ${STARTB} ${DB} ${ENDB}`;
 #for (( i=1; i <= 32; i=i*2 ))
-for (( R=1; R <= 16; ++R ))
+#for (( R=1; R <= 16; ++R ))
+for B in 32 128 512 1024;
 do
-    #B=$((32*$i))
-    echo -n "${N}   ${R}    " >> ../data/${OUTFILE}_${DISTRIBUTION[$DIST]}.dat
-    for B in 32 128 512 1024;
+    MYPATH=../data/${OUTFILE}_${DISTRIBUTION[$DIST]}_B${B}.dat
+    for R in "${RARRAY[@]}"
     do
         #B=$((32*$i))
         echo "Compiling with BSIZE=$B"
-        COMPILE=`make BSIZE=${B} R=${R}`
+        COMPILE=`make BSIZE=${B} R=${R} ARCH=${ARCH}`
         echo ${COMPILE}
+        #B=$((32*$i))
+        echo -n "${N}  ${B}  ${R}  " >> ${MYPATH}
         M=0
         S=0
         x=0
@@ -51,6 +54,7 @@ do
         v2=0
         for k in `seq 1 ${SAMPLES}`;
         do
+            echo "[BSIZE=$B, R=${R}, SAMPLE $k] ./${BINARY} ${DEV} ${N} 0 ${SEED} ${REPEAT} ${DIST} 2"
             value=`./${BINARY} ${DEV}    ${N} 0 ${SEED} ${REPEAT} ${DIST} 2`
             x="$(cut -d',' -f1 <<<"$value")"
             y="$(cut -d',' -f2 <<<"$value")"
@@ -82,13 +86,13 @@ do
         z2=$(echo "scale=10; $z1/$SAMPLES" | bc)
         v2=$(echo "scale=10; $v1/$SAMPLES" | bc)
         echo "---> B=${B} N=${N} R=${R} --> (MEAN, VAR, STDEV, STERR, SUM, CPUSUM, DIFF, %DIFF) -> (${TMEAN[$q]}[ms], ${TVAR[$q]}, ${TSTDEV[$q]}, ${TSTERR[$q]}, ${y2}, ${w2}, ${z2}, ${v2})"
-        echo -n "${TMEAN[$q]} ${TVAR[$q]} ${TSTDEV[$q]} ${TSTERR[$q]} ${y} ${w} ${z} ${v}        " >> ../data/${OUTFILE}_${DISTRIBUTION[$DIST]}.dat
+        echo -n "${TMEAN[$q]} ${TVAR[$q]} ${TSTDEV[$q]} ${TSTERR[$q]} ${y} ${w} ${z} ${v}        " >> ${MYPATH} 
+        echo " "
+        echo " " >> ${MYPATH}
+        echo " "
+        echo " "
         echo " "
     done
-    echo " " >> ../data/${OUTFILE}_${DISTRIBUTION[$DIST]}.dat
-    echo " "
-    echo " "
-    echo " "
 done 
 
 
