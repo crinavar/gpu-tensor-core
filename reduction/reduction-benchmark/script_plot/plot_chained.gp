@@ -41,7 +41,7 @@ set style line 3 lt 1 lc rgb '#a2142f' pt 8  pi -6 lw 2 ps 1 # red
 set key right top Left title 'Method' font "Courier, 20"
 set log y
 
-plot    '../data/rconf_titan'.gpu.'_'.dist.'.dat' using 2:3 title "B32" with lp ls 1,\
+plot    '../data/CRISTOBAL-rconf-'.gpu.'_'.dist.'_B1024.dat' using 2:3 title "B32" with lp ls 1,\
         '../data/rconf_titan'.gpu.'_'.dist.'.dat' using 2:11 title "B128" with lp ls 2,\
         '../data/rconf_titan'.gpu.'_'.dist.'.dat' using 2:19 title "B512" with lp ls 3,\
         '../data/rconf_titan'.gpu.'_'.dist.'.dat' using 2:27 title "B1024" with lp ls 4

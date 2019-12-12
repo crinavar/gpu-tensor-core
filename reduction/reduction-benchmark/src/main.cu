@@ -94,7 +94,7 @@ int main(int argc, char **argv){
     int method = atoi(argv[7]);
 
 #ifdef DEBUG
-    const char* methods[4] = {"SHUFFLE", "THEORY RECURSIVE", "TENSOR-SHUFFLE CHAINED", "MIXED"};
+    const char* methods[5] = {"WARP-SHUFFLE", "THEORY RECURRENCE (CG)", "CHAINED MMAs", "SPLIT", "THEORY RECURRENCE (iterative kernels)"};
     printf("\n\
             ***************************\n\
             method=%s\n\
@@ -160,7 +160,7 @@ int main(int argc, char **argv){
     
     if(method == 0){
         #ifdef DEBUG
-            printf("SHUFFLE (BSIZE = %i)\n", BSIZE);
+            printf("%s (BSIZE = %i)\n", methods[method], BSIZE);
         #endif
         block = dim3(BSIZE, 1, 1);
         grid = dim3((n + BSIZE -1)/BSIZE, 1, 1);
@@ -175,7 +175,7 @@ int main(int argc, char **argv){
     }
     else if(method == 1){
         #ifdef DEBUG
-            printf("THEORY RECURSIVE (BSIZE =%i)\n", BSIZE);
+            printf("%s (BSIZE =%i)\n", methods[method], BSIZE);
         #endif
         if(n<=524288){
             //printf("reduction_tc_theory (cooperative groups)\n");
@@ -230,7 +230,7 @@ int main(int argc, char **argv){
     }
     if(method == 2){
         #ifdef DEBUG
-            printf("TENSOR SHUFFLE (CHAIN R=%i, BSIZE = %i)\n", R, BSIZE);
+            printf("%s (R=%i, BSIZE = %i)\n", methods[method], R, BSIZE);
         #endif
         //printf("reduction_tc_blockshuffle\n");
         //block = dim3(TCSIZE*2*bs, 1, 1);
@@ -250,7 +250,7 @@ int main(int argc, char **argv){
     }
     if(method == 3){
         #ifdef DEBUG
-            printf("MIXED (BSIZE = %i)\n", BSIZE);
+            printf("%s (BSIZE = %i)\n", methods[method], BSIZE);
         #endif
         block = dim3(BSIZE, 1, 1);
         long nsh = (long)ceil(factor_ns*n);
@@ -271,6 +271,28 @@ int main(int argc, char **argv){
         cudaEventSynchronize(stop);
         cudaMemcpy(out, outd, sizeof(float)*1, cudaMemcpyDeviceToHost);
     }        
+    else if(method == 4){
+        #ifdef DEBUG
+            printf("%s (BSIZE =%i)\n", methods[method], BSIZE);
+        #endif
+        block = dim3(BSIZE, 1, 1);
+        grid = dim3((n + TCSQ*bs-1)/(TCSQ*bs), 1, 1);
+        int dn = ((n + TCSQ-1)/TCSQ) * TCSQ;
+        int rlimit = 1 << 1;
+        while(dn >= rlimit){
+            printf("executing recurrence for dn=%i >= rlimit =%i\n", dn, rlimit);
+            printf("       grid (%i, %i, %i)    block(%i, %i, %i)\n\n\n", grid.x, grid.y, grid.z, block.x, block.y, block.z);
+            //kernel_reduction_tc_theory<<<grid, block>>>(outd_m0, outd_m0, dn);
+            // para n generico: actualizar n --> nuevo n 'paddeado' y mas chico
+            dn = (dn + TCSQ-1)/TCSQ;
+            grid = dim3((dn + TCSQ*bs-1)/(TCSQ*bs), 1, 1);
+            //printmats(A, dn, "[after] mat D:");
+        }
+        //grid = dim3((n + 256 - 1)/TCSQ, 1, 1);
+        //cudaMemcpy(Ad, A, sizeof(REAL)*n, cudaMemcpyDeviceToHost);    
+        //printf("D: %f\n",(float)A[0]);
+        
+    }
     float time = 0.0f;
     cudaEventElapsedTime(&time, start, stop);
     double cpusum = gold_reduction(A, n);
