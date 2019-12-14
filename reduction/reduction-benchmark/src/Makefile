@@ -1,6 +1,7 @@
 BSIZE=256
 R=1
-PARAMS=-O3 -DBSIZE=${BSIZE} -DR=${R}
+DEBUG=DUMMY
+PARAMS=-O3 -DBSIZE=${BSIZE} -DR=${R} -D${DEBUG}
 ARCH=sm_70
 all:
 	nvcc ${PARAMS} -rdc=true -arch ${ARCH} main.cu -o prog
