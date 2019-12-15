@@ -24,10 +24,11 @@ int main(int argc, char **argv){
     // params
     if(argc != 8){
         fprintf(stderr, "run as ./prog dev n factor_ns seed REPEATS dist method\nmethod:\
-        \n0 -> shuffle\
-        \n1 -> theory recursive\
-        \n2 -> tensor_shuffle\
-        \n3 -> mixed\n\n");
+        \n0 -> warp-shuffle    \
+        \n1 -> recurrence\
+        \n2 -> chained MMAs\
+        \n3 -> split\
+        \n4 -> recursive-chained\n\n");
         exit(EXIT_FAILURE);
     }
     int dev = atoi(argv[1]);
@@ -40,7 +41,7 @@ int main(int argc, char **argv){
     int method = atoi(argv[7]);
 
 #ifdef DEBUG
-    const char* methods[4] = {"WARP-SHUFFLE", "THEORY RECURRENCE", "CHAINED MMAs", "SPLIT"};
+    const char* methods[5] = {"WARP-SHUFFLE", "RECURRENCE", "CHAINED MMAs", "SPLIT", "RECURRENCE-CHAINED"};
     printf("\n\
             ***************************\n\
             method=%s\n\
@@ -121,6 +122,9 @@ int main(int argc, char **argv){
             break;
         case 3:
             split_reduction(Adh, outd, n, factor_ns, REPEATS);
+            break;
+        case 4:
+            recurrence_reduction_chained(Adh, outd, outd_recA, outd_recB, n, REPEATS);
             break;
     }        
     cudaEventRecord(stop);

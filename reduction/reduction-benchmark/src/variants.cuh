@@ -20,10 +20,10 @@ void recurrence_reduction(half *Adh, float *outd, half *outd_recA, half *outd_re
         long dn = n;
         block = dim3(BSIZE, 1, 1);
         //grid = dim3((dn + TCSQ*bs-1)/(TCSQ*bs), 1, 1);
-        grid = dim3((dn + (TCSQ*bs*(R)) - 1)/(TCSQ*bs*(R)), 1, 1);
+        grid = dim3((dn + (TCSQ*bs) - 1)/(TCSQ*bs), 1, 1);
         #ifdef DEBUG
-            printf("executing recurrence for dn=%i >= rlimit =%i\n", dn, rlimit);
-            printf("       grid (%i, %i, %i)    block(%i, %i, %i)\n\n\n", grid.x, grid.y, grid.z, block.x, block.y, block.z);
+            printf("RECURRENCE dn=%i >= rlimit =%i  ", dn, rlimit);
+            printf("( grid (%i, %i, %i)    block(%i, %i, %i) ).......", grid.x, grid.y, grid.z, block.x, block.y, block.z);
         #endif
         kernel_recurrence<<<grid, block>>>(Adh, outd_recA, dn);
         #ifdef DEBUG
@@ -32,16 +32,67 @@ void recurrence_reduction(half *Adh, float *outd, half *outd_recA, half *outd_re
             printf("DONE\n");
         #endif
         cudaDeviceSynchronize();
+        dn = (dn + TCSQ-1)/TCSQ;
+        grid = dim3((dn + (TCSQ*bs) - 1)/(TCSQ*bs), 1, 1);
         while(dn > rlimit){
-            dn = (dn + TCSQ-1)/TCSQ;
             //grid = dim3((dn + TCSQ*bs-1)/(TCSQ*bs), 1, 1);
-            grid = dim3((dn + (TCSQ*bs*(R)) - 1)/(TCSQ*bs*(R)), 1, 1);
             #ifdef DEBUG
-                printf("executing recurrence for dn=%i >= rlimit =%i\n", dn, rlimit);
-                printf("       grid (%i, %i, %i)    block(%i, %i, %i)\n\n\n", grid.x, grid.y, grid.z, block.x, block.y, block.z);
+                printf("RECURRENCE dn=%i >= rlimit =%i  ", dn, rlimit);
+                printf("( grid (%i, %i, %i)    block(%i, %i, %i) ).......", grid.x, grid.y, grid.z, block.x, block.y, block.z);
             #endif
             kernel_recurrence<<<grid, block>>>(outd_recA, outd_recB, dn);
             cudaDeviceSynchronize();
+            dn = (dn + TCSQ-1)/TCSQ;
+            grid = dim3((dn + (TCSQ*bs) - 1)/(TCSQ*bs), 1, 1);
+            #ifdef DEBUG
+                gpuErrchk( cudaPeekAtLastError() );
+                gpuErrchk( cudaDeviceSynchronize() );
+                printf("DONE\n");
+            #endif
+            temp = outd_recB;
+            outd_recB = outd_recA;
+            outd_recA = temp;
+        }
+    }
+    cudaMemcpy(&resh, outd_recA, sizeof(half), cudaMemcpyDeviceToHost);    
+    resf = __half2float(resh); 
+    cudaMemcpy(outd, &resf, sizeof(float), cudaMemcpyHostToDevice);    
+}
+
+void recurrence_reduction_chained(half *Adh, float *outd, half *outd_recA, half *outd_recB, long n, int REPEATS){
+    dim3 block, grid;
+    int rlimit = 1;
+    half *temp, resh;
+    float resf;
+    int bs = BSIZE >> 5;
+    for(int i=0; i<REPEATS; ++i){
+        long dn = n;
+        block = dim3(BSIZE, 1, 1);
+        //grid = dim3((dn + TCSQ*bs-1)/(TCSQ*bs), 1, 1);
+        grid = dim3((dn + (TCSQ*bs*(R)) - 1)/(TCSQ*bs*(R)), 1, 1);
+        #ifdef DEBUG
+            printf("RECURRENCE-CHAINED (R=%i) dn=%i >= rlimit =%i  ", R, dn, rlimit);
+            printf("( grid (%i, %i, %i)    block(%i, %i, %i) ).......", grid.x, grid.y, grid.z, block.x, block.y, block.z);
+        #endif
+        kernel_recurrence_chained<<<grid, block>>>(Adh, outd_recA, dn);
+        #ifdef DEBUG
+            gpuErrchk( cudaPeekAtLastError() );
+            gpuErrchk( cudaDeviceSynchronize() );
+            printf("DONE\n");
+        #endif
+        cudaDeviceSynchronize();
+        dn = (dn + TCSQ-1)/TCSQ;
+        grid = dim3((dn + (TCSQ*bs*(R)) - 1)/(TCSQ*bs*(R)), 1, 1);
+        while(dn > rlimit){
+            //grid = dim3((dn + TCSQ*bs-1)/(TCSQ*bs), 1, 1);
+            #ifdef DEBUG
+                printf("RECURRENCE-CHAINED (R=%i) dn=%i >= rlimit =%i  ", R, dn, rlimit);
+                printf("( grid (%i, %i, %i)    block(%i, %i, %i) ).......", grid.x, grid.y, grid.z, block.x, block.y, block.z);
+            #endif
+            kernel_recurrence_chained<<<grid, block>>>(outd_recA, outd_recB, dn);
+            cudaDeviceSynchronize();
+            dn = (dn + TCSQ-1)/TCSQ;
+            grid = dim3((dn + (TCSQ*bs*(R)) - 1)/(TCSQ*bs*(R)), 1, 1);
             #ifdef DEBUG
                 gpuErrchk( cudaPeekAtLastError() );
                 gpuErrchk( cudaDeviceSynchronize() );

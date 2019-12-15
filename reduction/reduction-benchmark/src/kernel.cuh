@@ -319,6 +319,7 @@ __global__ void kernel_recurrence(half* in, half* out, long n){
     // (5) Store per-warp result, warps that act on locations greater than n do not reach this line
     if(wlane == 0){
         out[gwid] = d_frag.x[0];
+        //printf("\nresult = %f\n", (float) out[gwid]);
     }
 }
 
@@ -331,7 +332,7 @@ __global__ void kernel_recurrence_chained(half* in, half* out, long n){
     int wlane = threadIdx.x & 31;
     long warp_offset = R*(blockIdx.x*DIFF + offwid);
     int gwid = (BSIZE >> 5)*blockIdx.x + wid;  // global warp id
-    int woffR = warp_offset;
+    int woffR;
     
     wmma::fragment<wmma::matrix_a, WMMA_M, WMMA_N, WMMA_K, half, wmma::row_major> a_frag;
     wmma::fragment<wmma::matrix_b, WMMA_M, WMMA_N, WMMA_K, half, wmma::row_major> b_frag;
@@ -343,8 +344,8 @@ __global__ void kernel_recurrence_chained(half* in, half* out, long n){
 
     if(warp_offset >= n){ return; }
     for(int r=0; r<R; ++r){
-        woffR += + TCSQ*r;
-        if(woffR <= n){
+        woffR = warp_offset + TCSQ*r;
+        if(woffR + TCSQ <= n){
             wmma::load_matrix_sync(b_frag, in + woffR, TCSIZE);
         }
         else{
@@ -353,7 +354,7 @@ __global__ void kernel_recurrence_chained(half* in, half* out, long n){
             for(int i=0; i<8; ++i){
                 smat[wlane + (i << 5)] = (woffR + wlane + (i<<5)) < n ? in[woffR + wlane + (i<<5)] : hz;
             }
-            // don't need __syncthreads as it is just one warp working on SM
+            // don't need __syncthreads as it is just one warp working on smat
             wmma::load_matrix_sync(b_frag, smat, TCSIZE);
         }
         // (3) MMA #1
@@ -371,6 +372,7 @@ __global__ void kernel_recurrence_chained(half* in, half* out, long n){
     // (5) Store per-warp result, warps that act on locations greater than n do not reach this line
     if(wlane == 0){
         out[gwid] = d_frag.x[0];
+        //printf("\nresult = %f\n", (float) out[gwid]);
     }
 }
 
