@@ -36,6 +36,26 @@ void init_constant(REAL *m, long n, const float val, int seed){
         m[k] = (float) val;
     }
 }
+
+void init_distribution(REAL *m, long n, int seed, int dist){
+    switch(dist){
+        case 0: 
+            init_normal(m, n, 0.0f, 1.0f, seed);
+            break;
+        case 1:
+            init_uniform(m, n, 0.0f, 1.0f, seed);
+            break;
+        case 2:
+            init_constant(m, n, 0.01f, seed);
+            break;
+        default:
+            init_normal(m, n, 0.0f, 1.0f, seed);
+            break;
+    }
+}
+
+
+
 double gold_reduction(REAL *m, long n){
     double sum = 0.0f;
     for(long k=0; k<n; ++k){

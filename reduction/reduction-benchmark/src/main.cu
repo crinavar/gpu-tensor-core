@@ -42,18 +42,20 @@ int main(int argc, char **argv){
 
 #ifdef DEBUG
     const char* methods[5] = {"WARP-SHUFFLE", "RECURRENCE", "CHAINED MMAs", "SPLIT", "RECURRENCE-CHAINED"};
+    const char* disttext[3] = {"Normal Distribution", "Uniform Distribution", "Constant Distribution"};
     printf("\n\
             ***************************\n\
-            method=%s\n\
-            dev = %i\n\
-            n=%i\n\
-            factor_ns=%f\n\
-            prng_seed = %i\n\
-            KERNEL_REPEATS = %i\n\
-            TCSIZE=%i\n\
-            R = %i\n\
-            BSIZE = %i\n\
-            ***************************\n\n", methods[method], dev, n, factor_ns, seed, REPEATS, TCSIZE, R, BSIZE);
+            dev            = %i\n\
+            method         = %s\n\
+            n              = %i\n\
+            factor_ns      = %f\n\
+            dist           = %s\n\
+            prng_seed      = %i\n\
+            REPEATS        = %i\n\
+            TCSIZE         = %i\n\
+            R              = %i\n\
+            BSIZE          = %i\n\
+            ***************************\n\n", dev, methods[method], n, factor_ns, disttext[dist], seed, REPEATS, TCSIZE, R, BSIZE);
 #endif
     
     // set device
@@ -74,31 +76,7 @@ int main(int argc, char **argv){
     cudaMalloc(&outd_recA, sizeof(half)*(smalln));
     cudaMalloc(&outd_recB, sizeof(half)*(smalln));
 
-    //init(A, n, 1, seed);
-    switch(dist){
-        case 0: 
-            #ifdef DEBUG
-                printf("NORMAL DISTRIBUTION\n");
-            #endif
-            init_normal(A, n, 0.0f, 1.0f, seed);
-            break;
-        case 1:
-            #ifdef DEBUG
-                printf("UNIFORM DISTRIBUTION\n");
-            #endif
-            init_uniform(A, n, 0.0f, 1.0f, seed);
-            break;
-        case 2:
-            #ifdef DEBUG
-                printf("CONSTANT DISTRIBUTION\n");
-            #endif
-            init_constant(A, n, 0.01f, seed);
-            break;
-        default:
-            init_normal(A, n, 0.0f, 1.0f, seed);
-            break;
-    }
-
+    init_distribution(A, n, seed, dist);
     cudaMemcpy(Ad, A, sizeof(REAL)*n, cudaMemcpyHostToDevice);
     convertFp32ToFp16 <<< (n + 256 - 1)/256, 256 >>> (Adh, Ad, n);
     cudaDeviceSynchronize();
