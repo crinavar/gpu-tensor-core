@@ -23,7 +23,7 @@ ENDDB=1024
 ALG=4
 for B in 32 128 512 1024;
 do
-    MYPATH=data/recurrence-rconf-${OUTFILE}_${DISTRIBUTION[$DIST]}_B${B}.dat
+    MYPATH=data/rconf-recurrence-${OUTFILE}_${DISTRIBUTION[$DIST]}_B${B}.dat
     for R in {1..128}
     do
         echo "Compiling with BSIZE=$B   R=${R}"
