@@ -24,7 +24,7 @@ ALG=4
 for B in 32 128 512 1024;
 do
     MYPATH=data/recurrence-rconf-${OUTFILE}_${DISTRIBUTION[$DIST]}_B${B}.dat
-    for R in 1 2 3 .. 128
+    for R in {1..128}
     do
         echo "Compiling with BSIZE=$B   R=${R}"
         COMPILE=`make BSIZE=${B} R=${R} ARCH=${ARCH}`

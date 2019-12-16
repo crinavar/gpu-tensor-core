@@ -319,7 +319,9 @@ __global__ void kernel_recurrence(half* in, half* out, long n){
     // (5) Store per-warp result, warps that act on locations greater than n do not reach this line
     if(wlane == 0){
         out[gwid] = d_frag.x[0];
-        //printf("\nresult = %f\n", (float) out[gwid]);
+        #ifdef KDEBUG
+            printf("\n[gwid=%i] [wid=%i] [wlane=%i] [Bid = %i] result = %f\n", gwid, wid, wlane, blockIdx.x, (float) out[gwid]);
+        #endif
     }
 }
 
@@ -345,6 +347,7 @@ __global__ void kernel_recurrence_chained(half* in, half* out, long n){
     if(warp_offset >= n){ return; }
     for(int r=0; r<R; ++r){
         woffR = warp_offset + TCSQ*r;
+        if(woffR >= n){ break; }
         if(woffR + TCSQ <= n){
             wmma::load_matrix_sync(b_frag, in + woffR, TCSIZE);
         }
@@ -372,7 +375,9 @@ __global__ void kernel_recurrence_chained(half* in, half* out, long n){
     // (5) Store per-warp result, warps that act on locations greater than n do not reach this line
     if(wlane == 0){
         out[gwid] = d_frag.x[0];
-        //printf("\nresult = %f\n", (float) out[gwid]);
+        #ifdef KDEBUG
+            printf("\n[gwid=%i] [wid=%i] [wlane=%i] [Bid = %i] result = %f\n", gwid, wid, wlane, blockIdx.x, (float) out[gwid]);
+        #endif
     }
 }
 
