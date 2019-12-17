@@ -7,7 +7,7 @@ y2 = ARG4
 print "GPU: Titan ",gpu," dist: ",dist
 
 out = '../plots/JOURNAL-rconf-recurrence-chain-'.gpu.'_'.dist.'.eps'
-title = "Running time (".gpu.")\n Recurrence-chain, N {/Symbol \273} 87 Million" 
+title = "Running time (".gpu.")\n Recurrence-chain, N {/Symbol \273} 1.4Bi" 
 
 set   autoscale                        # scale axes automatically
 set term postscript eps color blacktext "Courier" 24
@@ -17,7 +17,7 @@ set title title
 #set log y
 set yrange [y1:y2]
 set ytics mirror
-set xtics (0, 4, 16, 32, 48, 64, 80, 96, 112, 128)
+set xtics (0, 4, 16, 20, 32, 48, 64, 80, 96, 112, 128)
 set ylabel 'Time [ms]' rotate by 90 offset -1
 set xlabel '#R'
 set font "Courier, 20"

@@ -113,17 +113,14 @@ int main(int argc, char **argv){
     double cpusum = gold_reduction(A, n);
 
     #ifdef DEBUG
-        //printf("gpu: %f\ncpu: %f \ndiff = %f (%f%%)\n", (float)*out, cpusum, fabs((float)*out - cpusum), 100.0f*fabs((float)*out - cpusum)/cpusum);
-        /*/printf("%f \n",(n/(time/1000.0f))/1000000000.0f);
-        printf("%f\n", time/(REPEATS));*/
-    #endif
+        printf("Done:\n\
+                Time (GPU):  %f\n\
+                GPU Result:  %f\n\
+                CPU Result:  %f\n\
+                Diff Result: %f\n\
+                \% Error   : %f\n\n", time/(REPEATS),(float)*out,cpusum,fabs((float)*out - cpusum),fabs(100.0f*fabs((float)*out - cpusum)/cpusum));
+    #else
         printf("%f,%f,%f,%f,%f\n", time/(REPEATS),(float)*out,cpusum,fabs((float)*out - cpusum),fabs(100.0f*fabs((float)*out - cpusum)/cpusum));
-    #ifdef DEBUG
-        /*if(n < PRINTLIMIT){
-           printmats(A, on, "A final:");
-        }*/
-        //printarray(A, 1, "D_final: ");
-        //printf("%i\n",DIFF);
     #endif
     free(A);
     free(out);

@@ -5,4 +5,4 @@ KDEBUG=DUMMY
 PARAMS=-O3 -DBSIZE=${BSIZE} -DR=${R} -D${DEBUG} -D${KDEBUG}
 ARCH=sm_75
 all:
-	nvcc ${PARAMS} -arch ${ARCH} src/main.cu -o prog
+	nvcc ${PARAMS} -arch ${ARCH} src/main.cu -o bin/prog
