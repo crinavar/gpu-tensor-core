@@ -23,12 +23,11 @@
 int main(int argc, char **argv){
     // params
     if(argc != 8){
-        fprintf(stderr, "run as ./prog dev n factor_ns seed REPEATS dist method\nmethod:\
-        \n0 -> warp-shuffle    \
+        fprintf(stderr, "run as ./prog dev n factor_ns seed REPEATS dist alg\nalg:\
+        \n0 -> warp-shuffle\
         \n1 -> recurrence\
-        \n2 -> chained MMAs\
-        \n3 -> split\
-        \n4 -> recursive-chained\n\n");
+        \n2 -> single-pass\
+        \n3 -> split\n\n");
         exit(EXIT_FAILURE);
     }
     int dev = atoi(argv[1]);
@@ -38,10 +37,14 @@ int main(int argc, char **argv){
     int seed = atoi(argv[4]);
     int REPEATS = atoi(argv[5]);
     int dist = atoi(argv[6]);
-    int method = atoi(argv[7]);
+    int alg = atoi(argv[7]);
+    if(alg > 3){
+        fprintf(stderr, "Error: Algorithms are in range 0, 1, 2, 3\n");
+        exit(EXIT_FAILURE);
+    }
 
 #ifdef DEBUG
-    const char* methods[5] = {"WARP-SHUFFLE", "RECURRENCE", "CHAINED MMAs", "SPLIT", "RECURRENCE-CHAINED"};
+    const char* algorithms[4] = {"warp-shuffle", "recurrence", "single-pass", "split"};
     const char* disttext[3] = {"Normal Distribution", "Uniform Distribution", "Constant Distribution"};
     printf("\n\
             ***************************\n\
@@ -55,7 +58,7 @@ int main(int argc, char **argv){
             TCSIZE         = %i\n\
             R              = %i\n\
             BSIZE          = %i\n\
-            ***************************\n\n", dev, methods[method], n, factor_ns, disttext[dist], seed, REPEATS, TCSIZE, R, BSIZE);
+            ***************************\n\n", dev, algorithms[alg], n, factor_ns, disttext[dist], seed, REPEATS, TCSIZE, R, BSIZE);
 #endif
     
     // set device
@@ -85,10 +88,10 @@ int main(int argc, char **argv){
     cudaEventCreate(&start);
     cudaEventCreate(&stop);
     #ifdef DEBUG
-        printf("%s (BSIZE = %i)\n", methods[method], BSIZE);
+        printf("%s (BSIZE = %i)\n", algorithms[alg], BSIZE);
     #endif
     cudaEventRecord(start);
-    switch(method){
+    switch(alg){
         case 0:
             warpshuffle_reduction(Adh, outd, n, REPEATS);
             break;
@@ -96,13 +99,10 @@ int main(int argc, char **argv){
             recurrence_reduction(Adh, outd, outd_recA, outd_recB, n, REPEATS);
             break;
         case 2:
-            chainedMMAs_reduction(Adh, outd, n, REPEATS);
+            singlepass_reduction(Adh, outd, n, REPEATS);
             break;
         case 3:
             split_reduction(Adh, outd, n, factor_ns, REPEATS);
-            break;
-        case 4:
-            recurrence_reduction_chained(Adh, outd, outd_recA, outd_recB, n, REPEATS);
             break;
     }        
     cudaEventRecord(stop);
@@ -111,14 +111,13 @@ int main(int argc, char **argv){
     float time = 0.0f;
     cudaEventElapsedTime(&time, start, stop);
     double cpusum = gold_reduction(A, n);
-
     #ifdef DEBUG
-        printf("Done:\n\
-                Time (GPU):  %f\n\
-                GPU Result:  %f\n\
-                CPU Result:  %f\n\
-                Diff Result: %f\n\
-                \% Error   : %f\n\n", time/(REPEATS),(float)*out,cpusum,fabs((float)*out - cpusum),fabs(100.0f*fabs((float)*out - cpusum)/cpusum));
+        printf("Done:\nTime (GPU)  = %f\nGPU Result  = %f\nCPU Result  = %f\nDiff Result = %f\nError       = %f%%\n\n", 
+                time/(REPEATS),
+                (float)*out,
+                (float)cpusum,
+                fabs((float)*out - cpusum),
+                fabs(100.0f*fabs((float)*out - cpusum)/cpusum));
     #else
         printf("%f,%f,%f,%f,%f\n", time/(REPEATS),(float)*out,cpusum,fabs((float)*out - cpusum),fabs(100.0f*fabs((float)*out - cpusum)/cpusum));
     #endif

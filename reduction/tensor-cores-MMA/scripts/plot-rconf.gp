@@ -1,15 +1,16 @@
 reset
 gpu  = ARG1
 dist = ARG2
-y1 = ARG3
-y2 = ARG4
+alg = ARG3
+y1 = ARG4
+y2 = ARG5
 
-print "GPU: Titan ",gpu," dist: ",dist
+print "GPU: Titan ",gpu," dist: ",dist," alg: ",alg
+out = 'plots/JOURNAL-rconf-'.alg.'-'.gpu.'-'.dist.'.eps'
+title = "Running time (".gpu.")\n".alg.", N {/Symbol \273} 100M" 
 
-out = '../plots/JOURNAL-rconf-recurrence-chain-'.gpu.'_'.dist.'.eps'
-title = "Running time (".gpu.")\n Recurrence-chain, N {/Symbol \273} 1.4Bi" 
-
-set   autoscale                        # scale axes automatically
+# scale axes automatically
+set autoscale
 set term postscript eps color blacktext "Courier" 24
 set output out
 set title title
@@ -17,7 +18,7 @@ set title title
 #set log y
 set yrange [y1:y2]
 set ytics mirror
-set xtics (0, 4, 16, 20, 32, 48, 64, 80, 96, 112, 128)
+set xtics (0, 4, 8, 16, 24, 32, 40, 48, 56, 64)
 set ylabel 'Time [ms]' rotate by 90 offset -1
 set xlabel '#R'
 set font "Courier, 20"
@@ -33,7 +34,7 @@ set style line 7 lt 1 lc rgb '#a2142f' pt 8  pi -6 lw 2 ps 1 # red
 
 set key right top Left font "Courier, 20"
 
-plot '../data/rconf-recurrence-'.gpu.'_'.dist.'_B128.dat' using 3:4 title "B128" with lines ls 4,\
-     '../data/rconf-recurrence-'.gpu.'_'.dist.'_B512.dat' using 3:4 title "B512" with lines ls 3,\
-     '../data/rconf-recurrence-'.gpu.'_'.dist.'_B1024.dat' using 3:4 title "B1024" with lines ls 2,\
-     '../data/rconf-recurrence-'.gpu.'_'.dist.'_B32.dat' using 3:4 title "B32" with lines ls 1,\
+plot 'data/rconf-'.alg.'-'.gpu.'-'.dist.'-B32.dat' using 3:4 title "B32" with lines ls 1,\
+     'data/rconf-'.alg.'-'.gpu.'-'.dist.'-B128.dat' using 3:4 title "B128" with lines ls 4,\
+     'data/rconf-'.alg.'-'.gpu.'-'.dist.'-B512.dat' using 3:4 title "B512" with lines ls 3,\
+     'data/rconf-'.alg.'-'.gpu.'-'.dist.'-B1024.dat' using 3:4 title "B1024" with lines ls 2

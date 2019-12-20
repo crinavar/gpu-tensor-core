@@ -12,57 +12,6 @@ void warpshuffle_reduction(half *Adh, float *outd, long n, int REPEATS){
 
 void recurrence_reduction(half *Adh, float *outd, half *outd_recA, half *outd_recB, long n, int REPEATS){
     dim3 block, grid;
-    int rlimit = 1;
-    half *temp, resh;
-    float resf;
-    int bs = BSIZE >> 5;
-    for(int i=0; i<REPEATS; ++i){
-        long dn = n;
-        block = dim3(BSIZE, 1, 1);
-        grid = dim3((dn + (TCSQ*bs) - 1)/(TCSQ*bs), 1, 1);
-        #ifdef DEBUG
-            printf("[kernel sample #%i]\n", i+1);
-            printf("dn=%12i >= rlimit =%5i  ", dn, rlimit);
-            printf("grid(%5i, %i, %i) block(%i, %i, %i).......", grid.x, grid.y, grid.z, block.x, block.y, block.z);
-        #endif
-        kernel_recurrence<<<grid, block>>>(Adh, outd_recA, dn);
-        #ifdef DEBUG
-            gpuErrchk( cudaPeekAtLastError() );
-            gpuErrchk( cudaDeviceSynchronize() );
-            printf("done\n");
-        #endif
-        cudaDeviceSynchronize();
-        dn = (dn + TCSQ-1)/TCSQ;
-        grid = dim3((dn + (TCSQ*bs) - 1)/(TCSQ*bs), 1, 1);
-        while(dn > rlimit){
-            #ifdef DEBUG
-                printf("dn=%12i >= rlimit =%5i  ", dn, rlimit);
-                printf("grid(%5i, %i, %i) block(%i, %i, %i).......", grid.x, grid.y, grid.z, block.x, block.y, block.z);
-            #endif
-            kernel_recurrence<<<grid, block>>>(outd_recA, outd_recB, dn);
-            cudaDeviceSynchronize();
-            dn = (dn + TCSQ-1)/TCSQ;
-            grid = dim3((dn + (TCSQ*bs) - 1)/(TCSQ*bs), 1, 1);
-            #ifdef DEBUG
-                gpuErrchk( cudaPeekAtLastError() );
-                gpuErrchk( cudaDeviceSynchronize() );
-                printf("done\n");
-            #endif
-            temp = outd_recB;
-            outd_recB = outd_recA;
-            outd_recA = temp;
-        }
-        #ifdef DEBUG
-            printf("\n");
-        #endif
-    }
-    cudaMemcpy(&resh, outd_recA, sizeof(half), cudaMemcpyDeviceToHost);    
-    resf = __half2float(resh); 
-    cudaMemcpy(outd, &resf, sizeof(float), cudaMemcpyHostToDevice);    
-}
-
-void recurrence_reduction_chained(half *Adh, float *outd, half *outd_recA, half *outd_recB, long n, int REPEATS){
-    dim3 block, grid;
     block = dim3(BSIZE, 1, 1);
     const int rlimit = 1;
     half *temp, resh;
@@ -77,7 +26,7 @@ void recurrence_reduction_chained(half *Adh, float *outd, half *outd_recA, half 
             printf("dn=%12i >= rlimit =%5i  ", dn, rlimit);
             printf("grid(%5i, %i, %i) block(%i, %i, %i).......", grid.x, grid.y, grid.z, block.x, block.y, block.z);
         #endif
-        kernel_recurrence_chained<<<grid, block>>>(Adh, outd_recA, dn);
+        kernel_recurrence<<<grid, block>>>(Adh, outd_recA, dn);
         #ifdef DEBUG
             gpuErrchk( cudaPeekAtLastError() );
             gpuErrchk( cudaDeviceSynchronize() );
@@ -92,7 +41,7 @@ void recurrence_reduction_chained(half *Adh, float *outd, half *outd_recA, half 
                 printf("dn=%12i >= rlimit =%5i  ", dn, rlimit);
                 printf("grid(%5i, %i, %i) block(%i, %i, %i).......", grid.x, grid.y, grid.z, block.x, block.y, block.z);
             #endif
-            kernel_recurrence_chained<<<grid, block>>>(outd_recA, outd_recB, dn);
+            kernel_recurrence<<<grid, block>>>(outd_recA, outd_recB, dn);
             cudaDeviceSynchronize();
             //dn = (dn + TCSQ-1)/TCSQ;
             dn = (dn + TCSQ*(R)-1)/(TCSQ*(R));
@@ -115,7 +64,7 @@ void recurrence_reduction_chained(half *Adh, float *outd, half *outd_recA, half 
     cudaMemcpy(outd, &resf, sizeof(float), cudaMemcpyHostToDevice);    
 }
 
-void chainedMMAs_reduction(half *Adh, float *outd, long n, int REPEATS){
+void singlepass_reduction(half *Adh, float *outd, long n, int REPEATS){
     int bs = BSIZE >> 5;
     dim3 block = dim3(BSIZE, 1, 1);
     dim3 grid = dim3((n + (TCSQ*bs*(R)) - 1)/(TCSQ*bs*(R)), 1, 1);
@@ -124,7 +73,7 @@ void chainedMMAs_reduction(half *Adh, float *outd, long n, int REPEATS){
     #endif
     for(int i=0; i<REPEATS; ++i){
         cudaMemset(outd, 0, sizeof(REAL)*1);
-        kernel_chainedMMAs<<<grid, block>>>(Adh, outd, n, bs);
+        kernel_singlepass<<<grid, block>>>(Adh, outd, n, bs);
         cudaDeviceSynchronize();
     }
 }
@@ -147,3 +96,56 @@ void split_reduction(half *Adh, float *outd, long n, float factor_ns, int REPEAT
         cudaDeviceSynchronize();
     }
 }
+
+// BACKUP VARIANT (NOT BEING USED)
+void recurrence_reduction_R1(half *Adh, float *outd, half *outd_recA, half *outd_recB, long n, int REPEATS){
+    dim3 block, grid;
+    int rlimit = 1;
+    half *temp, resh;
+    float resf;
+    int bs = BSIZE >> 5;
+    for(int i=0; i<REPEATS; ++i){
+        long dn = n;
+        block = dim3(BSIZE, 1, 1);
+        grid = dim3((dn + (TCSQ*bs) - 1)/(TCSQ*bs), 1, 1);
+        #ifdef DEBUG
+            printf("[kernel sample #%i]\n", i+1);
+            printf("dn=%12i >= rlimit =%5i  ", dn, rlimit);
+            printf("grid(%5i, %i, %i) block(%i, %i, %i).......", grid.x, grid.y, grid.z, block.x, block.y, block.z);
+        #endif
+        kernel_recurrence_R1<<<grid, block>>>(Adh, outd_recA, dn);
+        #ifdef DEBUG
+            gpuErrchk( cudaPeekAtLastError() );
+            gpuErrchk( cudaDeviceSynchronize() );
+            printf("done\n");
+        #endif
+        cudaDeviceSynchronize();
+        dn = (dn + TCSQ-1)/TCSQ;
+        grid = dim3((dn + (TCSQ*bs) - 1)/(TCSQ*bs), 1, 1);
+        while(dn > rlimit){
+            #ifdef DEBUG
+                printf("dn=%12i >= rlimit =%5i  ", dn, rlimit);
+                printf("grid(%5i, %i, %i) block(%i, %i, %i).......", grid.x, grid.y, grid.z, block.x, block.y, block.z);
+            #endif
+            kernel_recurrence_R1<<<grid, block>>>(outd_recA, outd_recB, dn);
+            cudaDeviceSynchronize();
+            dn = (dn + TCSQ-1)/TCSQ;
+            grid = dim3((dn + (TCSQ*bs) - 1)/(TCSQ*bs), 1, 1);
+            #ifdef DEBUG
+                gpuErrchk( cudaPeekAtLastError() );
+                gpuErrchk( cudaDeviceSynchronize() );
+                printf("done\n");
+            #endif
+            temp = outd_recB;
+            outd_recB = outd_recA;
+            outd_recA = temp;
+        }
+        #ifdef DEBUG
+            printf("\n");
+        #endif
+    }
+    cudaMemcpy(&resh, outd_recA, sizeof(half), cudaMemcpyDeviceToHost);    
+    resf = __half2float(resh); 
+    cudaMemcpy(outd, &resf, sizeof(float), cudaMemcpyHostToDevice);    
+}
+

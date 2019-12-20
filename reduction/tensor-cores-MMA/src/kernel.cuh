@@ -193,7 +193,7 @@ __inline__ __device__ REAL block_reduce_tc(int N, half *a, int offset){
 
 
 
-__global__ void kernel_chainedMMAs(half *a, float *out, int N,int bs){
+__global__ void kernel_singlepass(half *a, float *out, int N,int bs){
 	//int offset = blockIdx.x * TCSQ * 32;       
 	int offset = blockIdx.x * (bs * TCSQ * R); 
 	if(offset < N){
@@ -275,7 +275,8 @@ __global__ void kernel_split(int N, half *a, float *out, int bntc, int bns){
 
 
 
-__global__ void kernel_recurrence(half* in, half* out, long n){
+// backup kernel assuming R=1 (this one is not being used)
+__global__ void kernel_recurrence_R1(half* in, half* out, long n){
     __shared__ half smat[TCSQ];
     __shared__ half As[DIFF];
     const half hz = 0.0f;
@@ -325,7 +326,7 @@ __global__ void kernel_recurrence(half* in, half* out, long n){
     }
 }
 
-__global__ void kernel_recurrence_chained(half* in, half* out, long n){
+__global__ void kernel_recurrence(half* in, half* out, long n){
     __shared__ half smat[TCSQ];
     __shared__ half As[DIFF];
     const half hz = 0.0f;
