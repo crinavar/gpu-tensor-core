@@ -40,10 +40,10 @@ set style line 6 lt 1 lc rgb '#4dbeee'              pt 4    pi -6   lw 2 # light
 set style line 7 lt 1 lc rgb '#a2142f'              pt 8    pi -6   lw 2 # red
 
 # variables
-warp_shuffle_data = 'data/alg-warp-shuffle-'.gpu.'-'.dist.'-B1024.dat'
+warp_shuffle_data = 'data/alg-warpshuffle-'.gpu.'-'.dist.'-B1024.dat'
 split_data = 'data/alg-split-FS0.5-'.gpu.'-'.dist.'-B32.dat'
-recurrence_data = 'data/alg-recurrence-'.gpu.'-'.dist.'-B128.dat'
-single_pass_data = 'data/alg-single-pass-R4-'.gpu.'-'.dist.'-B32.dat'
+recurrence_data = 'data/alg-recurrence-R4-'.gpu.'-'.dist.'-B128.dat'
+single_pass_data = 'data/alg-singlepass-R4-'.gpu.'-'.dist.'-B32.dat'
 
 #print "warp_shuffle_data: ".warp_shuffle_data
 #print "split_data: ".split_data
