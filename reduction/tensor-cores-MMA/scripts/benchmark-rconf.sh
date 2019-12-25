@@ -5,7 +5,7 @@ if [ "$#" -ne 10 ]; then
 fi
 DEV=$1; ARCH=$2; N=$3; SEED=$4; DIST=$5; REPEAT=$6; SAMPLES=$7; BINARY=${8}; ALG=${9}; OUTFILE=${10}
 DISTRIBUTION=("normal" "uniform")
-ALGORITHMS=("warp-shuffle" "recurrence" "single-pass" "split")
+ALGORITHMS=("warpshuffle" "recurrence" "singlepass" "split")
 TMEAN=0
 TVAR=0
 TSTDEV=0
