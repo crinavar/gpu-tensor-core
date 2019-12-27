@@ -10,7 +10,7 @@ dist = ARG2
 
 print "GPU: ",gpu," dist: ",dist
 
-out = 'plots/variants-running-time-'.gpu.'-'.dist.'.eps'
+out = 'plots/variants-runtime-'.gpu.'-'.dist.'.eps'
 title = "Variants Running Time (".gpu.")\n".dist." Distribution"
 
 set   autoscale                        # scale axes automatically
@@ -19,7 +19,7 @@ set output out
 set title title
 
 set ytics mirror
-set ylabel 'Speedup' rotate by 90 offset -0.3
+set ylabel 'Time [ms]' rotate by 90 offset 0
 set xtic auto                          # set xtics automatically
 set ytic auto                          # set ytics automatically
 set yrange [0.01:10]
@@ -32,7 +32,7 @@ set xtics format "%1.0s"
 set key right bot Left  font "Courier, 18"
 
 set style line 1 lt 1 lc rgb 'forest-green' dt 1    pt 5    pi -6   lw 2 # green   
-set style line 2 lt 2 lc rgb 'orange'       dt 2    pt 2    pi -6   lw 2 # orange
+set style line 2 lt 2 lc rgb 'black'       dt 2    pt 2    pi -6   lw 2 # orange
 set style line 3 lt 3 lc rgb 'web-blue'     dt 6    pt 6    pi -6   lw 2 # blue
 set style line 4 lt 4 lc rgb 'red'          dt 5    pt 11   pi -6   lw 2 # purple
 set style line 5 lt 1 lc rgb '#77ac30'              pt 13   pi -6   lw 2 # green
