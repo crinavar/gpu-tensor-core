@@ -16,10 +16,18 @@ BINARY=${10}
 OUTFILE=${11}
 METHODS=("warpshuffle" "recurrence" "singlepass" "split")
 NM=$((${#METHODS[@]}-1))
-R=("1" "4" "4" "1")
+
+# these values are for TITAN-RTX
+#R=("1" "4" "4" "1")
+#FS=("0" "0" "0" "0.5")
+#BSIZE=("1024" "128" "32" "32")
+
+# these values are for TESLA-V100
+R=("1" "5" "4" "1")
 FS=("0" "0" "0" "0.5")
-BSIZE=("1024" "128" "32" "32")
-DISTRIBUTION=("Normal" "Uniform")
+BSIZE=("1024" "32" "128" "32")
+
+DISTRIBUTION=("normal" "uniform")
 TMEAN[0]=0
 TVAR[0]=0
 TSTDEV[0]=0
