@@ -25,7 +25,7 @@ NM=$((${#METHODS[@]}-1))
 # these values are for TESLA-V100
 R=("1" "5" "4" "1")
 FS=("0" "0" "0" "0.5")
-BSIZE=("1024" "32" "128" "32")
+BSIZE=("1024" "32" "128" "512")
 
 DISTRIBUTION=("normal" "uniform")
 TMEAN[0]=0
@@ -33,7 +33,8 @@ TVAR[0]=0
 TSTDEV[0]=0
 TSTERR[0]=0
 
-for i in 0 1 2 3;
+#for i in 0 1 2 3;
+for i in 1 2;
 do
     echo "[EXECUTE] scripts/benchmark-alg.sh ${DEV}     ${STARTN} ${ENDN} ${DN}      ${BSIZE[$i]} ${BSIZE[$i]} 1     ${ARCH} ${R[$i]} ${FS[$i]} ${DIST} ${SEED}        ${KREPEATS} ${SAMPLES} ${BINARY} ${i} ${OUTFILE}"
     scripts/benchmark-alg.sh ${DEV} ${STARTN} ${ENDN} ${DN} ${BSIZE[$i]} ${BSIZE[$i]} 1 ${ARCH}  ${R[$i]}  ${FS[$i]} ${DIST} ${SEED} ${KREPEATS} ${SAMPLES} ${BINARY} ${i} ${OUTFILE}

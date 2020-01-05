@@ -21,7 +21,7 @@ BINARY=${15}
 ALG=${16}
 OUTFILE=${17}
 DISTRIBUTION=("normal" "uniform" "constant")
-ALGORITHMS=("warpshuffle" "recurrence-R${R}" "singlepass-R${R}" "split-FS${FS}")
+ALGORITHMS=("warpshuffle" "recurrence" "singlepass" "split")
 TMEAN[0]=0
 TVAR[0]=0
 TSTDEV[0]=0
@@ -37,7 +37,7 @@ do
     for N in `seq ${STARTN} ${DN} ${ENDN}`;
     do
         echo "[B=${B},R=${R},FS=${FS}]  ${N}"
-        echo -n "${N}  ${B}  ${R}  " >> ${OUTPATH}
+        echo -n "${N}  ${B}  ${R}  ${FS}     " >> ${OUTPATH}
         M=0; S=0; x=0; y=0; z=0; v=0; w1=0; y1=0; z1=0; v1=0; w2=0; y2=0; z2=0; v2=0;
         for k in `seq 1 ${SAMPLES}`;
         do
