@@ -3,9 +3,9 @@ reset
 gpu  = ARG1
 dist = ARG2
 
-print "GPU: ",gpu," dist: ",dist
+print "plot-comparison-runtime.gp ---> GPU: ",gpu," dist: ",dist
 
-out     = 'plots/plot-comparison-runtime-'.gpu.'-'.dist.'.eps'
+out     = 'plots/comparison-runtime-'.gpu.'-'.dist.'.eps'
 mytitle = "Runtime vs CUB Library (".gpu.")\n".dist." Distribution\n "
 
 set autoscale # scale axes automatically

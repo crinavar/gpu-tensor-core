@@ -3,10 +3,10 @@ reset
 gpu  = ARG1
 dist = ARG2
 
-print "GPU: ",gpu," dist: ",dist
+print "plot-comparison-speedup.gp ---> GPU: ",gpu," dist: ",dist
 
-out     = 'plots/plot-comparison-speedup-'.gpu.'-'.dist.'.eps'
-mytitle = "Speedup vs CUB Library (".gpu.")\n".dist." Distribution\n "
+out     = 'plots/comparison-speedup-'.gpu.'-'.dist.'.eps'
+mytitle = "Speedup vs CUB Library (".gpu.")\n".dist." Distribution\n"
 
 set autoscale # scale axes automatically
 set term postscript eps color blacktext "Courier" 24

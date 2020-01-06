@@ -3,9 +3,9 @@ reset
 gpu  = ARG1
 dist = ARG2
 
-print "GPU: ",gpu," dist: ",dist
+print "plot-comparison-error.gp ---> GPU: ",gpu," dist: ",dist
 
-out     = 'plots/plot-comparison-error-'.gpu.'_'.dist.'.eps'
+out     = 'plots/comparison-error-'.gpu.'_'.dist.'.eps'
 mytitle = "Error vs CUB Library (".gpu.")\n".dist." Distribution\n "
 
 set autoscale # scale axes automatically

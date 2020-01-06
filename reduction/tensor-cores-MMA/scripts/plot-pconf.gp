@@ -5,8 +5,8 @@ alg = ARG3
 y1 = ARG4
 y2 = ARG5
 
-print "GPU: ",gpu," dist: ",dist," alg: ",alg
-out = 'plots/JOURNAL-pconf-'.alg.'-'.gpu.'-'.dist.'.eps'
+print "plot-pconf.gp ---> GPU: ",gpu," dist: ",dist," alg: ",alg
+out = 'plots/pconf-'.alg.'-'.gpu.'-'.dist.'.eps'
 title = "Running time (".gpu.")\n".alg.", N {/Symbol \273} 100M" 
 
 # scale axes automatically

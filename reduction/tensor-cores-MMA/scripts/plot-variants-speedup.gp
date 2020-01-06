@@ -8,7 +8,7 @@ reset
 gpu  = ARG1
 dist = ARG2
 
-print "GPU: ",gpu," dist: ",dist
+print "plot-variants-speedup.gp ---> GPU: ",gpu," dist: ",dist
 
 out = 'plots/variants-speedup-'.gpu.'-'.dist.'.eps'
 title = "Speedup over Shuffle Reduction (".gpu.")\n".dist." Distribution"

@@ -8,7 +8,7 @@ reset
 gpu  = ARG1
 dist = ARG2
 
-print "GPU: ",gpu," dist: ",dist
+print "plot-variants-runtime.gp ---> GPU: ",gpu," dist: ",dist
 
 out = 'plots/variants-runtime-'.gpu.'-'.dist.'.eps'
 title = "Variants Running Time (".gpu.")\n".dist." Distribution"

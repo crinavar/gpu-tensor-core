@@ -8,7 +8,7 @@ reset
 gpu  = ARG1
 dist = ARG2
 
-print "GPU: ",gpu," dist: ",dist
+print "plot-variants-error.gp ---> GPU: ",gpu," dist: ",dist
 
 out = 'plots/variants-error-'.gpu.'-'.dist.'.eps'
 title = "Variants Error vs CPU-FP64\n".dist." Distribution"

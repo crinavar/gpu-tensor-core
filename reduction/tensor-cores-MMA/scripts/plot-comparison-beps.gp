@@ -3,9 +3,9 @@ reset
 gpu  = ARG1
 dist = ARG2
 
-print "GPU: ",gpu," dist: ",dist
+print "plot-comparison-beps.gp ---> GPU: ",gpu," dist: ",dist
 
-out     = 'plots/plot-comparison-BEPS-'.gpu.'-'.dist.'.eps'
+out     = 'plots/comparison-BEPS-'.gpu.'-'.dist.'.eps'
 mytitle = "Billion Elements per Second (BEPS), ".gpu."\n".dist." Distribution\n "
 
 set autoscale # scale axes automatically

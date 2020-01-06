@@ -1,9 +1,16 @@
 #!/bin/bash
+if [ "$#" -ne 1 ]; then
+    echo ""
+    echo "run as ${0} GPU-MODEL"
+    echo "example: scripts/plot-all.sh TESLA-V100"
+    echo ""
+    exit;
+fi
 GPU=${1}
 
 #for rconf and pconf, adjust the yranges manually
 RECY1=0.26; RECY2=0.31
-SINGLEY1=0.20; SINGLEY2=0.3
+SINGLEY1=0.235; SINGLEY2=0.3
 SPLITY1=0.2 SPLITY2=0.3
 
 # (1) rconf and pconf
