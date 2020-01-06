@@ -19,7 +19,7 @@ do
     echo ${COMPILE}
     for FS in $(seq 0.0 0.02 1.0)
     do
-        echo -n "${N}  ${B}  ${R}  ${FS}" >> ${MYPATH}
+        echo -n "${N}  ${B}  ${R}  ${FS}   " >> ${MYPATH}
         M=0; S=0; x=0; y=0; z=0; v=0; w1=0; y1=0; z1=0; v1=0; w2=0; y2=0; z2=0; v2=0;
         for k in `seq 1 ${SAMPLES}`;
         do

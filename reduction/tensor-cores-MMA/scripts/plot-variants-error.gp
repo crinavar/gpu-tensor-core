@@ -29,7 +29,7 @@ set xlabel 'n x 10^{6}'
 set font "Courier, 20"
 set pointsize   0.5
 set xtics format "%1.0s"
-set key right bot right  font "Courier, 18"
+set key right top font "Courier, 18"
 
 set style line 1 lt 1 lc rgb 'forest-green' dt 1    pt 5    pi -6   lw 2 # green   
 set style line 2 lt 2 lc rgb 'black'       dt 2    pt 2    pi -6   lw 2 # orange
@@ -41,16 +41,16 @@ set style line 7 lt 1 lc rgb '#a2142f'              pt 8    pi -6   lw 2 # red
 
 # variables
 warp_shuffle_data = 'data/alg-warpshuffle-'.gpu.'-'.dist.'-B1024.dat'
-split_data = 'data/alg-split-FS0.5-'.gpu.'-'.dist.'-B32.dat'
-recurrence_data = 'data/alg-recurrence-R4-'.gpu.'-'.dist.'-B128.dat'
-single_pass_data = 'data/alg-singlepass-R4-'.gpu.'-'.dist.'-B32.dat'
+split_data = 'data/alg-split-'.gpu.'-'.dist.'-B512.dat'
+recurrence_data = 'data/alg-recurrence-'.gpu.'-'.dist.'-B32.dat'
+single_pass_data = 'data/alg-singlepass-'.gpu.'-'.dist.'-B128.dat'
 
 #print "warp_shuffle_data: ".warp_shuffle_data
 #print "split_data: ".split_data
 #print "recurrence_data: ".recurrence_data
 #print "single_pass_data: ".single_pass_data
 
-plot    warp_shuffle_data 	using 1:11 title "warp-shuffle" 	with lp ls 2,\
-        recurrence_data 	using 1:11 title "v1-recurrence" 	with lp ls 3,\
-        single_pass_data 	using 1:11 title "v2-single-pass" 	with lp ls 1,\
-        split_data 		using 1:11 title "v3-split" 		with lp ls 4
+plot    warp_shuffle_data 	using 1:12 title "warp-shuffle" 	with lp ls 2,\
+        recurrence_data 	using 1:12 title "v1-recurrence" 	with lp ls 3,\
+        single_pass_data 	using 1:12 title "v2-single-pass" 	with lp ls 1,\
+        split_data 		using 1:12 title "v3-split" 		with lp ls 4

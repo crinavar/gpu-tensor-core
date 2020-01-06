@@ -6,7 +6,7 @@ y1 = ARG4
 y2 = ARG5
 
 print "GPU: ",gpu," dist: ",dist," alg: ",alg
-out = 'plots/JOURNAL-rconf-'.alg.'-'.gpu.'-'.dist.'.eps'
+out = 'plots/JOURNAL-pconf-'.alg.'-'.gpu.'-'.dist.'.eps'
 title = "Running time (".gpu.")\n".alg.", N {/Symbol \273} 100M" 
 
 # scale axes automatically
@@ -15,11 +15,11 @@ set term postscript eps color blacktext "Courier" 24
 set output out
 set title title
 
-set yrange [y1:y2]
+#set log y
+#set yrange [y1:y2]
 set ytics mirror
-set xtics (0, 4, 8, 16, 24, 32, 40, 48, 56, 64)
 set ylabel 'Time [ms]' rotate by 90 offset -1
-set xlabel '#R'
+set xlabel '% of warp-shuffle'
 set font "Courier, 20"
 
 set key Left top left reverse samplen 3.0 font "Courier,18" spacing 1 
@@ -31,9 +31,8 @@ set style line 5 lt 1 lc rgb '#77ac30' pt 13 pi -6 lw 2 ps 1 # green
 set style line 6 lt 1 lc rgb '#4dbeee' pt 4  pi -6 lw 2 ps 1 # light-blue
 set style line 7 lt 1 lc rgb '#a2142f' pt 8  pi -6 lw 2 ps 1 # red
 
-set key right top Left font "Courier, 20"
+set key left top Left font "Courier, 20"
 
-plot 'data/rconf-'.alg.'-'.gpu.'-'.dist.'-B32.dat' using 3:4 title "B32" with lines ls 1,\
-     'data/rconf-'.alg.'-'.gpu.'-'.dist.'-B128.dat' using 3:4 title "B128" with lines ls 4,\
-     'data/rconf-'.alg.'-'.gpu.'-'.dist.'-B512.dat' using 3:4 title "B512" with lines ls 3,\
-     'data/rconf-'.alg.'-'.gpu.'-'.dist.'-B1024.dat' using 3:4 title "B1024" with lines ls 2
+plot 'data/pconf-'.alg.'-'.gpu.'-'.dist.'-B512.dat'   using 4:5 title "B512"  with lines ls 1,\
+     'data/pconf-'.alg.'-'.gpu.'-'.dist.'-B1024.dat'  using 4:5 title "B1024" with lines ls 4
+

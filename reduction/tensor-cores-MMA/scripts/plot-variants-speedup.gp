@@ -22,7 +22,7 @@ set ytics mirror
 set ylabel 'Speedup' rotate by 90 offset -0.3
 set xtic auto                          # set xtics automatically
 set ytic auto                          # set ytics automatically
-set yrange [0.3:4.5]
+#set yrange [0.3:4.5]
 
 set xlabel 'n x 10^{6}'
 set font "Courier, 20"
@@ -39,14 +39,14 @@ set style line 6 lt 1 lc rgb '#4dbeee'              pt 4    pi -6   lw 2 # light
 set style line 7 lt 1 lc rgb '#a2142f'              pt 8    pi -6   lw 2 # red
 
 # variables
-recurrence_data = '< paste data/alg-warpshuffle-'.gpu.'-'.dist.'-B1024.dat data/alg-recurrence-R4-'.gpu.'-'.dist.'-B128.dat'
-single_pass_data = '< paste data/alg-warpshuffle-'.gpu.'-'.dist.'-B1024.dat data/alg-singlepass-R4-'.gpu.'-'.dist.'-B32.dat'
-split_data = '< paste data/alg-warpshuffle-'.gpu.'-'.dist.'-B1024.dat data/alg-split-FS0.5-'.gpu.'-'.dist.'-B32.dat'
+recurrence_data = '< paste data/alg-warpshuffle-'.gpu.'-'.dist.'-B1024.dat data/alg-recurrence-'.gpu.'-'.dist.'-B32.dat'
+single_pass_data = '< paste data/alg-warpshuffle-'.gpu.'-'.dist.'-B1024.dat data/alg-singlepass-'.gpu.'-'.dist.'-B128.dat'
+split_data = '< paste data/alg-warpshuffle-'.gpu.'-'.dist.'-B1024.dat data/alg-split-'.gpu.'-'.dist.'-B512.dat'
 
 #print "recurrence_data: ".recurrence_data
 #print "single_pass_data: ".recurrence_data
 #print "split_data: ".recurrence_data
-plot    recurrence_data using 1:($4/$15) title "v1-recurrence" with lp ls 3,\
-        single_pass_data using 1:($4/$15) title "v2-single-pass" with lp ls 1,\
-        split_data using 1:($4/$15) title "v3-split" with lp ls 4
+plot    recurrence_data using 1:($5/$17) title "v1-recurrence" with lp ls 3,\
+        single_pass_data using 1:($5/$17) title "v2-single-pass" with lp ls 1,\
+        split_data using 1:($5/$17) title "v3-split" with lp ls 4
 
