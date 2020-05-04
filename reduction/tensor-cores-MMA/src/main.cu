@@ -16,8 +16,8 @@
 #define WARPSIZE 32
 #define DIFF (BSIZE<<3)
 
-//#define OMP_REDUCTION_FLOAT "omp-nt" STR(NPROC) "-float"
-//#define OMP_REDUCTION_DOUBLE "omp-nt" STR(NPROC) "-double"
+#define OMP_REDUCTION_FLOAT "omp-nt" STR(NPROC) "-float"
+#define OMP_REDUCTION_DOUBLE "omp-nt" STR(NPROC) "-double"
 
 #define STR_HELPER(x) #x
 #define STR(x) STR_HELPER(x)
@@ -53,7 +53,7 @@ int main(int argc, char **argv){
     }
 
 #ifdef DEBUG
-    const char* algorithms[6] = {"warp-shuffle", "recurrence", "single-pass", "split", "omp-float", "omp-double"};
+    const char* algorithms[6] = {"warp-shuffle", "recurrence", "single-pass", "split", OMP_REDUCTION_FLOAT, OMP_REDUCTION_DOUBLE};
     const char* disttext[3] = {"Normal Distribution", "Uniform Distribution", "Constant Distribution"};
     printf("\n\
             ***************************\n\

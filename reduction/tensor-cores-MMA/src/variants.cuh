@@ -167,20 +167,4 @@ void omp_reduction(float *A, float *out, long n, int REPEATS){
         }
     }
     *out = acc;
-    
-    /*
-    // variant #2: many parallel regions opened, one for each repetition
-    T acc;
-    for(int k=0; k<REPEATS; ++k){
-        acc = (T)0.0f;
-        #pragma omp parallel shared(A,out) num_threads(NPROC)
-        {
-            #pragma omp for schedule(static) reduction(+ : acc)
-            for(int i = 0; i < n; ++i){
-                acc += A[i];
-            }
-        }
-    }
-    *out = acc;
-    */
 }
