@@ -8,6 +8,7 @@
 #include <map>
 #include <random>
 #include <cmath>
+#include <omp.h>
 #define REAL float
 #define TCSIZE 16
 #define TCSQ 256
@@ -27,7 +28,9 @@ int main(int argc, char **argv){
         \n0 -> warp-shuffle\
         \n1 -> recurrence\
         \n2 -> single-pass\
-        \n3 -> split\n\n");
+        \n3 -> split\
+        \n4 -> float-omp\
+        \n5 -> float-omp\n\n");
         exit(EXIT_FAILURE);
     }
     int dev = atoi(argv[1]);
@@ -38,13 +41,13 @@ int main(int argc, char **argv){
     int REPEATS = atoi(argv[5]);
     int dist = atoi(argv[6]);
     int alg = atoi(argv[7]);
-    if(alg > 3){
-        fprintf(stderr, "Error: Algorithms are in range 0, 1, 2, 3\n");
+    if(alg > 5){
+        fprintf(stderr, "Error: Algorithms are in range 0, 1, 2, 3, 4, 5\n");
         exit(EXIT_FAILURE);
     }
 
 #ifdef DEBUG
-    const char* algorithms[4] = {"warp-shuffle", "recurrence", "single-pass", "split"};
+    const char* algorithms[5] = {"warp-shuffle", "recurrence", "single-pass", "split", "float-omp", "float-omp"};
     const char* disttext[3] = {"Normal Distribution", "Uniform Distribution", "Constant Distribution"};
     printf("\n\
             ***************************\n\
@@ -104,10 +107,17 @@ int main(int argc, char **argv){
         case 3:
             split_reduction(Adh, outd, n, factor_ns, REPEATS);
             break;
+        case 4:
+            float_omp_reduction(A, out, n, REPEATS);
+            break;
+        case 5:
+            double_omp_reduction(A, out, n, REPEATS);
+            break;
     }        
     cudaEventRecord(stop);
     cudaEventSynchronize(stop);
-    cudaMemcpy(out, outd, sizeof(float)*1, cudaMemcpyDeviceToHost);
+    if(alg<4)
+        cudaMemcpy(out, outd, sizeof(float)*1, cudaMemcpyDeviceToHost);
     float time = 0.0f;
     cudaEventElapsedTime(&time, start, stop);
     double cpusum = gold_reduction(A, n);

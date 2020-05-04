@@ -149,3 +149,34 @@ void recurrence_reduction_R1(half *Adh, float *outd, half *outd_recA, half *outd
     cudaMemcpy(outd, &resf, sizeof(float), cudaMemcpyHostToDevice);    
 }
 
+void float_omp_reduction(float *A, float *out, long n, int REPEATS){
+    //double sum = 0;
+    float sum = 0;
+    for (int k=0; k<REPEATS; ++k){
+        sum = 0;
+        #pragma omp parallel shared(*A,out) num_threads(NPROC)
+        {
+            #pragma omp parallel for schedule(static,(n-1+NPROC)/NPROC) reduction(+ : sum)
+                for (int i = 0; i < n; ++i){
+                    sum += A[i];
+                }
+        }
+    }
+    *out = sum;
+}
+
+void double_omp_reduction(float *A, float *out, long n, int REPEATS){
+    double sum = 0;
+    //float sum = 0;
+    for (int k=0; k<REPEATS; ++k){
+        sum = 0;
+        #pragma omp parallel shared(*A,out) num_threads(NPROC)
+        {
+            #pragma omp parallel for schedule(static,(n-1+NPROC)/NPROC) reduction(+ : sum)
+                for (int i = 0; i < n; ++i){
+                    sum += A[i];
+                }
+        }
+    }
+    *out = sum;
+}
