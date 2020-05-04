@@ -22,15 +22,15 @@ void recurrence_reduction(half *Adh, float *outd, half *outd_recA, half *outd_re
         //grid = dim3((dn + TCSQ*bs-1)/(TCSQ*bs), 1, 1);
         grid = dim3((dn + (TCSQ*bs*(R)) - 1)/(TCSQ*bs*(R)), 1, 1);
         #ifdef DEBUG
-            printf("[kernel sample #%i]\n", i+1);
-            printf("dn=%12i >= rlimit =%5i  ", dn, rlimit);
-            printf("grid(%5i, %i, %i) block(%i, %i, %i).......", grid.x, grid.y, grid.z, block.x, block.y, block.z);
+            //printf("[kernel sample #%i]\n", i+1);
+            //printf("dn=%12i >= rlimit =%5i  ", dn, rlimit);
+            //printf("grid(%5i, %i, %i) block(%i, %i, %i).......", grid.x, grid.y, grid.z, block.x, block.y, block.z);
         #endif
         kernel_recurrence<<<grid, block>>>(Adh, outd_recA, dn);
         #ifdef DEBUG
             gpuErrchk( cudaPeekAtLastError() );
             gpuErrchk( cudaDeviceSynchronize() );
-            printf("done\n");
+            //printf("done\n");
         #endif
         cudaDeviceSynchronize();
         //dn = (dn + TCSQ-1)/TCSQ;
@@ -38,8 +38,8 @@ void recurrence_reduction(half *Adh, float *outd, half *outd_recA, half *outd_re
         grid.x = (dn + (TCSQ*bs*(R)) - 1)/(TCSQ*bs*(R));
         while(dn > rlimit){
             #ifdef DEBUG
-                printf("dn=%12i >= rlimit =%5i  ", dn, rlimit);
-                printf("grid(%5i, %i, %i) block(%i, %i, %i).......", grid.x, grid.y, grid.z, block.x, block.y, block.z);
+                //printf("dn=%12i >= rlimit =%5i  ", dn, rlimit);
+                //printf("grid(%5i, %i, %i) block(%i, %i, %i).......", grid.x, grid.y, grid.z, block.x, block.y, block.z);
             #endif
             kernel_recurrence<<<grid, block>>>(outd_recA, outd_recB, dn);
             cudaDeviceSynchronize();
@@ -49,14 +49,14 @@ void recurrence_reduction(half *Adh, float *outd, half *outd_recA, half *outd_re
             #ifdef DEBUG
                 gpuErrchk( cudaPeekAtLastError() );
                 gpuErrchk( cudaDeviceSynchronize() );
-                printf("done\n");
+                //printf("done\n");
             #endif
             temp = outd_recB;
             outd_recB = outd_recA;
             outd_recA = temp;
         }
         #ifdef DEBUG
-            printf("\n");
+            //printf("\n");
         #endif
     }
     cudaMemcpy(&resh, outd_recA, sizeof(half), cudaMemcpyDeviceToHost);    
@@ -149,34 +149,19 @@ void recurrence_reduction_R1(half *Adh, float *outd, half *outd_recA, half *outd
     cudaMemcpy(outd, &resf, sizeof(float), cudaMemcpyHostToDevice);    
 }
 
-void float_omp_reduction(float *A, float *out, long n, int REPEATS){
-    //double sum = 0;
-    float sum = 0;
-    for (int k=0; k<REPEATS; ++k){
-        sum = 0;
-        #pragma omp parallel shared(*A,out) num_threads(NPROC)
-        {
-            #pragma omp parallel for schedule(static,(n-1+NPROC)/NPROC) reduction(+ : sum)
-                for (int i = 0; i < n; ++i){
-                    sum += A[i];
-                }
-        }
-    }
-    *out = sum;
-}
 
-void double_omp_reduction(float *A, float *out, long n, int REPEATS){
-    double sum = 0;
-    //float sum = 0;
-    for (int k=0; k<REPEATS; ++k){
-        sum = 0;
-        #pragma omp parallel shared(*A,out) num_threads(NPROC)
+template<class T>
+void omp_reduction(float *A, float *out, long n, int REPEATS){
+    T acc;
+    for(int k=0; k<REPEATS; ++k){
+        acc = (T)0.0f;
+        #pragma omp parallel shared(A,out) num_threads(NPROC)
         {
-            #pragma omp parallel for schedule(static,(n-1+NPROC)/NPROC) reduction(+ : sum)
-                for (int i = 0; i < n; ++i){
-                    sum += A[i];
-                }
+            #pragma omp for schedule(static) reduction(+ : acc)
+            for(int i = 0; i < n; ++i){
+                acc += A[i];
+            }
         }
     }
-    *out = sum;
+    *out = acc;
 }

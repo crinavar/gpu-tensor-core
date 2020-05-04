@@ -47,7 +47,7 @@ int main(int argc, char **argv){
     }
 
 #ifdef DEBUG
-    const char* algorithms[5] = {"warp-shuffle", "recurrence", "single-pass", "split", "float-omp", "float-omp"};
+    const char* algorithms[6] = {"warp-shuffle", "recurrence", "single-pass", "split", "omp-float", "omp-double"};
     const char* disttext[3] = {"Normal Distribution", "Uniform Distribution", "Constant Distribution"};
     printf("\n\
             ***************************\n\
@@ -82,16 +82,23 @@ int main(int argc, char **argv){
     cudaMalloc(&outd_recA, sizeof(half)*(smalln));
     cudaMalloc(&outd_recB, sizeof(half)*(smalln));
 
+    #ifdef DEBUG 
+        printf("Init data...................."); fflush(stdout);
+    #endif
     init_distribution(A, n, seed, dist);
     cudaMemcpy(Ad, A, sizeof(REAL)*n, cudaMemcpyHostToDevice);
     convertFp32ToFp16 <<< (n + 256 - 1)/256, 256 >>> (Adh, Ad, n);
     cudaDeviceSynchronize();
+    #ifdef DEBUG 
+        printf("done\n"); fflush(stdout);
+    #endif
     
     cudaEvent_t start, stop;
     cudaEventCreate(&start);
     cudaEventCreate(&stop);
     #ifdef DEBUG
-        printf("%s (BSIZE = %i)\n", algorithms[alg], BSIZE);
+        //printf("%s (BSIZE = %i)...............", algorithms[alg], BSIZE); fflush(stdout);
+        printf("[%15s]............", algorithms[alg]); fflush(stdout);
     #endif
     cudaEventRecord(start);
     switch(alg){
@@ -108,28 +115,36 @@ int main(int argc, char **argv){
             split_reduction(Adh, outd, n, factor_ns, REPEATS);
             break;
         case 4:
-            float_omp_reduction(A, out, n, REPEATS);
+            omp_reduction<float>(A, out, n, REPEATS);
             break;
         case 5:
-            double_omp_reduction(A, out, n, REPEATS);
+            omp_reduction<double>(A, out, n, REPEATS);
             break;
     }        
     cudaEventRecord(stop);
     cudaEventSynchronize(stop);
+    #ifdef DEBUG
+        printf("done\n\n"); fflush(stdout);
+    #endif
     if(alg<4)
         cudaMemcpy(out, outd, sizeof(float)*1, cudaMemcpyDeviceToHost);
     float time = 0.0f;
     cudaEventElapsedTime(&time, start, stop);
+    double goldtime = omp_get_wtime();
     double cpusum = gold_reduction(A, n);
+    goldtime = omp_get_wtime() - goldtime;
     #ifdef DEBUG
-        printf("Done:\nTime (GPU)  = %f\nGPU Result  = %f\nCPU Result  = %f\nDiff Result = %f\nError       = %f%%\n\n", 
-                time/(REPEATS),
+        printf("Benchmark Summary:\n[%15s] => %f (%f secs)\nGold CPU          => %f (%f secs)\nDiff Result       = %f\nError             = %f%%\n\n", 
+                algorithms[alg],
                 (float)*out,
+                time/(REPEATS*1000.0),
                 (float)cpusum,
+                goldtime,
                 fabs((float)*out - cpusum),
                 fabs(100.0f*fabs((float)*out - cpusum)/cpusum));
     #else
-        printf("%f,%f,%f,%f,%f\n", time/(REPEATS),(float)*out,cpusum,fabs((float)*out - cpusum),fabs(100.0f*fabs((float)*out - cpusum)/cpusum));
+    printf("%f,%f,%f,%f,%f\n", time/(REPEATS),
+            (float)*out,cpusum,fabs((float)*out - cpusum),fabs(100.0f*fabs((float)*out - cpusum)/cpusum));
     #endif
     free(A);
     free(out);
