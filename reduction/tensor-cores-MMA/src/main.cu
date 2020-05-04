@@ -16,6 +16,12 @@
 #define WARPSIZE 32
 #define DIFF (BSIZE<<3)
 
+//#define OMP_REDUCTION_FLOAT "omp-nt" STR(NPROC) "-float"
+//#define OMP_REDUCTION_DOUBLE "omp-nt" STR(NPROC) "-double"
+
+#define STR_HELPER(x) #x
+#define STR(x) STR_HELPER(x)
+
 #include "tools.cuh"
 #include "kernel.cuh"
 #include "variants.cuh"
@@ -143,8 +149,8 @@ int main(int argc, char **argv){
                 fabs((float)*out - cpusum),
                 fabs(100.0f*fabs((float)*out - cpusum)/cpusum));
     #else
-    printf("%f,%f,%f,%f,%f\n", time/(REPEATS),
-            (float)*out,cpusum,fabs((float)*out - cpusum),fabs(100.0f*fabs((float)*out - cpusum)/cpusum));
+        printf("%f,%f,%f,%f,%f\n", time/(REPEATS),
+                (float)*out,cpusum,fabs((float)*out - cpusum),fabs(100.0f*fabs((float)*out - cpusum)/cpusum));
     #endif
     free(A);
     free(out);

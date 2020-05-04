@@ -152,6 +152,24 @@ void recurrence_reduction_R1(half *Adh, float *outd, half *outd_recA, half *outd
 
 template<class T>
 void omp_reduction(float *A, float *out, long n, int REPEATS){
+    // variant 1: just one parallel region opened for all repetitions
+    T acc;
+    #pragma omp parallel shared(A,out, acc) num_threads(NPROC)
+    {
+        int tid = omp_get_thread_num();
+        for(int k=0; k<REPEATS; ++k){
+            #pragma omp single
+            acc = (T)0.0f; 
+            #pragma omp for schedule(static) reduction(+ : acc)
+            for(int i = 0; i < n; ++i){
+                acc += A[i];
+            }
+        }
+    }
+    *out = acc;
+    
+    /*
+    // variant #2: many parallel regions opened, one for each repetition
     T acc;
     for(int k=0; k<REPEATS; ++k){
         acc = (T)0.0f;
@@ -164,4 +182,5 @@ void omp_reduction(float *A, float *out, long n, int REPEATS){
         }
     }
     *out = acc;
+    */
 }
