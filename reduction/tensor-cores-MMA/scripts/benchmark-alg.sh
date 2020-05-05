@@ -1,27 +1,28 @@
 #!/bin/bash
-if [ "$#" -ne 17 ]; then
-    echo "run as ${0} DEV   N1 N2 DN    B1 B2 DB  ARCH R FS DIST SEED    KREPEATS SAMPLES BINARY ALG OUTFILE"
+if [ "$#" -ne 18 ]; then
+    echo "run as ${0} DEV OMPTHREADS  N1 N2 DN    B1 B2 DB  ARCH R FS DIST SEED    KREPEATS SAMPLES BINARY ALG OUTFILE"
     exit;
 fi
 DEV=$1
-STARTN=$2
-ENDN=$3
-DN=$4
-STARTB=$5
-ENDB=$6
-DB=$7
-ARCH=$8
-R=$9
-FS=${10}
-DIST=${11}
-SEED=${12}
-REPEAT=${13}
-SAMPLES=${14}
-BINARY=${15}
-ALG=${16}
-OUTFILE=${17}
+OMPTHREADS=$2
+STARTN=$3
+ENDN=$4
+DN=$5
+STARTB=$6
+ENDB=$7
+DB=$8
+ARCH=$9
+R=${10}
+FS=${11}
+DIST=${12}
+SEED=${13}
+REPEAT=${14}
+SAMPLES=${15}
+BINARY=${16}
+ALG=${17}
+OUTFILE=${18}
 DISTRIBUTION=("normal" "uniform" "constant")
-ALGORITHMS=("warpshuffle" "recurrence" "singlepass" "split")
+ALGORITHMS=("warpshuffle" "recurrence" "singlepass" "split" "omp-float" "omp-double")
 TMEAN[0]=0
 TVAR[0]=0
 TSTDEV[0]=0
@@ -29,10 +30,13 @@ TSTERR[0]=0
 
 for B in `seq ${STARTB} ${DB} ${ENDB}`;
 do
-    COMPILE="make BSIZE=${B} ARCH=${ARCH} R=${R}"
+    CPU_AFF=$((${OMPTHREADS}-1))
+    CPU_AFF="export GOMP_CPU_AFFINITY=0-${CPU_AFF}"
+    COMPILE="make BSIZE=${B} ARCH=${ARCH} R=${R} NPROC=${OMPTHREADS}"
     echo "$COMPILE"
     C=`${COMPILE}`
-    #C=`make BSIZE=$B ARCH=${ARCH} R=${R}`
+    echo "${CPU_AFF}"
+    `${CPU_AFF}`
     OUTPATH=data/alg-${ALGORITHMS[${ALG}]}-${OUTFILE}-${DISTRIBUTION[$DIST]}-B${B}.dat
     for N in `seq ${STARTN} ${DN} ${ENDN}`;
     do
@@ -79,5 +83,5 @@ do
     echo " "
     echo " "
     echo " "
-done 
+done
 echo " "

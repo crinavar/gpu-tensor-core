@@ -2,6 +2,7 @@ reset
 
 gpu  = ARG1
 dist = ARG2
+cpu = ARG3
 
 print "plot-comparison-runtime.gp ---> GPU: ",gpu," dist: ",dist
 
@@ -37,7 +38,10 @@ set key Left bot right reverse samplen 3.0 font "Courier,18" spacing 1
 singlepass = 'data/alg-singlepass-'.gpu.'-'.dist.'-B128.dat'
 cub16 = 'data/alg-CUB-FP16-'.gpu.'-'.dist.'.dat'
 cub32 = 'data/alg-CUB-FP32-'.gpu.'-'.dist.'.dat'
+ompFloat = 'data/alg-omp-float-'.cpu.'-'.dist.'-B32.dat'
+ompDouble = 'data/alg-omp-double-'.cpu.'-'.dist.'-B32.dat'
 
 plot    cub32       using 1:2 title "CUB (float)"    with lp ls 2,\
         cub16       using 1:2 title "CUB (half)"   with lp ls 3,\
-	singlepass  using 1:5 title "single-pass"   with lp ls 1
+	    singlepass  using 1:5 title "single-pass"   with lp ls 1,\
+        ompFloat    using 1:5 title "omp-".cpu."-float" with lp ls 4
