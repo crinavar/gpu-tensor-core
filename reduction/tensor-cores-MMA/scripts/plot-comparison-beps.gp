@@ -32,7 +32,11 @@ set style line 7 lt 1 lc rgb '#a2142f'              pt 8    pi -6   lw 2 # red
 singlepass = 'data/alg-singlepass-'.gpu.'-'.dist.'-B128.dat'
 cub16 = 'data/alg-CUB-FP16-'.gpu.'-'.dist.'.dat'
 cub32 = 'data/alg-CUB-FP32-'.gpu.'-'.dist.'.dat'
+ompFloat = 'data/alg-omp-float-'.cpu.'-'.dist.'-B1.dat'
+ompDouble = 'data/alg-omp-double-'.cpu.'-'.dist.'-B1.dat'
 
 plot    singlepass  using 1:($1/($5*1000000)) title "single-pass"     with lp ls 1,\
         cub16       using 1:($1/($2*1000000)) title "CUB (half)"      with lp ls 3,\
         cub32       using 1:($1/($2*1000000)) title "CUB (float)"     with lp ls 2
+        ompFloat    using 1:($1/($5*1000000)) title "OpenMP ".cpu." (float)" with lp ls 4,\
+        ompDouble   using 1:($1/($5*1000000)) title "OpenMP ".cpu." (double)" with lp ls 5

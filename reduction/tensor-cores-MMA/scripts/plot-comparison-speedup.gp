@@ -2,6 +2,7 @@ reset
 
 gpu  = ARG1
 dist = ARG2
+cpu  = ARG3
 
 print "plot-comparison-speedup.gp ---> GPU: ",gpu," dist: ",dist
 
@@ -34,7 +35,12 @@ set style line 7 lt 1 lc rgb '#a2142f'              pt 8    pi -6   lw 2 # red
 singlepass  = '< paste data/alg-warpshuffle-'.gpu.'-'.dist.'-B1024.dat data/alg-singlepass-'.gpu.'-'.dist.'-B128.dat'
 cub16       = '< paste data/alg-warpshuffle-'.gpu.'-'.dist.'-B1024.dat data/alg-CUB-FP16-'.gpu.'-'.dist.'.dat'
 cub32       = '< paste data/alg-warpshuffle-'.gpu.'-'.dist.'-B1024.dat data/alg-CUB-FP32-'.gpu.'-'.dist.'.dat'
+ompFloat    = '< paste data/alg-warpshuffle-'.gpu.'-'.dist.'-B1024.dat data/alg-omp-float-'.cpu.'-'.dist.'-B1.dat'
+ompDouble   = '< paste data/alg-warpshuffle-'.gpu.'-'.dist.'-B1024.dat data/alg-omp-double-'.cpu.'-'.dist.'-B1.dat'
+  
 
 plot    singlepass  using 1:($5/$17) title "single-pass" with lp ls 1,\
         cub16       using 1:($5/$14) title "CUB (half)"  with lp ls 3,\
-        cub32       using 1:($5/$14) title "CUB (float)" with lp ls 2
+        cub32       using 1:($5/$14) title "CUB (float)" with lp ls 2,\
+        ompFloat    using 1:($5/$17) title "OpenMP ".cpu." (float)" with lp ls 4,\
+        ompDouble   using 1:($5/$17) title "OpenMP ".cpu." (double)" with lp ls 5

@@ -156,7 +156,6 @@ void omp_reduction(float *A, float *out, long n, int REPEATS){
     T acc;
     #pragma omp parallel shared(A,out, acc) num_threads(NPROC)
     {
-        int tid = omp_get_thread_num();
         for(int k=0; k<REPEATS; ++k){
             #pragma omp single
             acc = (T)0.0f; 
