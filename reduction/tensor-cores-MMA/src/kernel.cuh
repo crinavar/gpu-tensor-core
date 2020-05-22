@@ -329,6 +329,8 @@ __global__ void kernel_recurrence_R1(half* in, half* out, long n){
 __global__ void kernel_recurrence(half* in, half* out, long n){
     __shared__ half smat[TCSQ];
     __shared__ half As[DIFF];
+    //__shared__ half row1[TCSQ];
+    //__shared__ half col1[TCSQ];
     const half hz = 0.0f;
     int wid = threadIdx.x >> 5;
     int offwid = wid << 8;
@@ -336,12 +338,36 @@ __global__ void kernel_recurrence(half* in, half* out, long n){
     long warp_offset = R*(blockIdx.x*DIFF + offwid);
     int gwid = (BSIZE >> 5)*blockIdx.x + wid;  // global warp id
     int woffR;
+
+    /*
+    // row1 col1 approach
+    if(wid == 0){
+        if(threadIdx.x < 16){
+            row1[threadIdx.x] = 1.0f;
+            #pragma unroll
+            for(int i=1; i<TCSIZE; ++i){
+                row1[TCSIZE*i + threadIdx.x] = 0.0f;
+            }
+        }
+        else{
+            col1[TCSIZE*(threadIdx.x - TCSIZE)] = 1.0f;
+            #pragma unroll
+            for(int j=1; j<TCSIZE; ++j){
+                col1[TCSIZE*(threadIdx.x-TCSIZE) + j] = 0.0f;
+            }
+        }
+    }
+    __syncthreads();
+    */
     
     wmma::fragment<wmma::matrix_a, WMMA_M, WMMA_N, WMMA_K, half, wmma::row_major> a_frag;
     wmma::fragment<wmma::matrix_b, WMMA_M, WMMA_N, WMMA_K, half, wmma::row_major> b_frag;
     wmma::fragment<wmma::accumulator, WMMA_M, WMMA_N, WMMA_K, half> d_frag;
     wmma::fragment<wmma::accumulator, WMMA_M, WMMA_N, WMMA_K, half> c_frag;
+    // full 1s approach
     wmma::fill_fragment(a_frag, 1.0f);
+    // row1 col1 approach
+    //wmma::load_matrix_sync(a_frag, row1, TCSIZE);
     wmma::fill_fragment(c_frag, 0.0f);
     wmma::fill_fragment(d_frag, 0.0f);
 
@@ -365,7 +391,10 @@ __global__ void kernel_recurrence(half* in, half* out, long n){
         wmma::mma_sync(d_frag, a_frag, b_frag, d_frag);
     }
 
+    // full 1s approach
     wmma::fill_fragment(b_frag, 1.0f);
+    // row1 col1
+    //wmma::load_matrix_sync(b_frag, col1, TCSIZE);
     wmma::store_matrix_sync(As+offwid, d_frag, TCSIZE, wmma::mem_row_major);
     wmma::load_matrix_sync(a_frag, As+offwid, TCSIZE);
     //wmma::fill_fragment(d_frag, 0.0f);
