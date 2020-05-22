@@ -5,7 +5,10 @@ void warpshuffle_reduction(half *Adh, float *outd, long n, int REPEATS){
     dim3 grid = dim3((n + BSIZE -1)/BSIZE, 1, 1);
     for(int i=0; i<REPEATS; ++i){
         cudaMemset(outd, 0, sizeof(REAL)*1);
-        kernel_reduction_shuffle<<<grid, block>>>(Adh, outd, n);  CUERR;
+        kernel_reduction_shuffle<<<grid, block>>>(Adh, outd, n);
+        #ifdef DEBUG
+            CUERR;
+        #endif
         cudaDeviceSynchronize();
     }
 }

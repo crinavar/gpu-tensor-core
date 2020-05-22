@@ -35,8 +35,8 @@ int main(int argc, char **argv){
         \n1 -> recurrence\
         \n2 -> single-pass\
         \n3 -> split\
-        \n4 -> float-omp\
-        \n5 -> float-omp\n\n");
+        \n4 -> omp-reduction-float\
+        \n5 -> omp-reduction-double\n\n");
         exit(EXIT_FAILURE);
     }
     int dev = atoi(argv[1]);
