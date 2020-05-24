@@ -22,6 +22,7 @@
 #define STR_HELPER(x) #x
 #define STR(x) STR_HELPER(x)
 
+#include "../nvml-power/nvmlPower.hpp"
 #include "tools.cuh"
 #include "kernel.cuh"
 #include "variants.cuh"
@@ -74,12 +75,20 @@ int main(int argc, char **argv){
     cudaSetDevice(dev);
 
     // mallocs
+    #ifdef DEBUG 
+        printf("CPU memory allocation........"); fflush(stdout);
+    #endif
     REAL *A, *Ad;
     half *Adh, *outd_recA, *outd_recB;
     float *outd, *out;
-
     A = (REAL*)malloc(sizeof(REAL)*n);
     out = (float*)malloc(sizeof(float)*1);
+
+
+    #ifdef DEBUG 
+        printf("done\n"); fflush(stdout);
+        printf("GPU memory allocation........"); fflush(stdout);
+    #endif
     cudaMalloc(&Ad, sizeof(REAL)*n);
     cudaMalloc(&Adh, sizeof(half)*n);
     cudaMalloc(&outd, sizeof(float)*1);
@@ -89,10 +98,20 @@ int main(int argc, char **argv){
     cudaMalloc(&outd_recB, sizeof(half)*(smalln));
 
     #ifdef DEBUG 
+        printf("done\n"); fflush(stdout);
         printf("Init data...................."); fflush(stdout);
     #endif
     init_distribution(A, n, seed, dist);
+
+    #ifdef DEBUG 
+        printf("done\n"); fflush(stdout);
+        printf("Memcpy Host -> Dev..........."); fflush(stdout);
+    #endif
     cudaMemcpy(Ad, A, sizeof(REAL)*n, cudaMemcpyHostToDevice);
+    #ifdef DEBUG 
+        printf("done\n"); fflush(stdout);
+        printf("[kernel] FP32 -> FP16........"); fflush(stdout);
+    #endif
     convertFp32ToFp16 <<< (n + 256 - 1)/256, 256 >>> (Adh, Ad, n);
     cudaDeviceSynchronize();
     #ifdef DEBUG 
@@ -132,12 +151,23 @@ int main(int argc, char **argv){
     #ifdef DEBUG
         printf("done\n\n"); fflush(stdout);
     #endif
-    if(alg<4)
+    if(alg<4){
         cudaMemcpy(out, outd, sizeof(float)*1, cudaMemcpyDeviceToHost);
+    }
+
+    
     float time = 0.0f;
     cudaEventElapsedTime(&time, start, stop);
     double goldtime = omp_get_wtime();
+    #ifdef DEBUG 
+        printf("[CPU] Gold Reduction........"); fflush(stdout);
+    #endif
     double cpusum = gold_reduction(A, n);
+    #ifdef DEBUG 
+        printf("done\n"); fflush(stdout);
+    #endif
+
+
     goldtime = omp_get_wtime() - goldtime;
     #ifdef DEBUG
         printf("Benchmark Summary:\n[%15s] => %f (%f secs)\nGold CPU          => %f (%f secs)\nDiff Result       = %f\nError             = %f%%\n\n", 
