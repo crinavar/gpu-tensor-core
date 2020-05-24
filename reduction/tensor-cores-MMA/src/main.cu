@@ -22,7 +22,7 @@
 #define STR_HELPER(x) #x
 #define STR(x) STR_HELPER(x)
 
-#include "../nvml-power/nvmlPower.hpp"
+#include "nvmlPower.hpp"
 #include "tools.cuh"
 #include "kernel.cuh"
 #include "variants.cuh"
