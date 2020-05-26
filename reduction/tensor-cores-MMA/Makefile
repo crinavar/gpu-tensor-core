@@ -1,9 +1,11 @@
 BSIZE=256
 R=1
 DEBUG=DUMMY
+POWER=DUMMY
 KDEBUG=DUMMY
 NPROC=16
-PARAMS=-lnvidia-ml -O3 -DNPROC=${NPROC} -DBSIZE=${BSIZE} -DR=${R} -D${DEBUG} -D${KDEBUG} --default-stream per-thread -Xcompiler -lpthread -Xcompiler -fopenmp
+PARAMS=-O3 -DNPROC=${NPROC} -DBSIZE=${BSIZE} -D${POWER} -DR=${R} -D${DEBUG} -D${KDEBUG} --default-stream per-thread -lnvidia-ml -Xcompiler -lpthread,-fopenmp
 ARCH=sm_75
+SOURCES=$(wildcard src/*.cpp) $(wildcard src/*.cu)
 all:
-	nvcc ${PARAMS} -arch ${ARCH} src/main.cu src/nvmlPower.cpp -o bin/prog
+	nvcc ${PARAMS} -arch ${ARCH} ${SOURCES} -o bin/prog

@@ -76,7 +76,7 @@ int main(int argc, char **argv){
 
     // mallocs
     #ifdef DEBUG 
-        printf("CPU memory allocation........"); fflush(stdout);
+        printf("CPU memory allocation        "); fflush(stdout);
     #endif
     REAL *A, *Ad;
     half *Adh, *outd_recA, *outd_recB;
@@ -87,7 +87,7 @@ int main(int argc, char **argv){
 
     #ifdef DEBUG 
         printf("done\n"); fflush(stdout);
-        printf("GPU memory allocation........"); fflush(stdout);
+        printf("GPU memory allocation        "); fflush(stdout);
     #endif
     cudaMalloc(&Ad, sizeof(REAL)*n);
     cudaMalloc(&Adh, sizeof(half)*n);
@@ -99,18 +99,18 @@ int main(int argc, char **argv){
 
     #ifdef DEBUG 
         printf("done\n"); fflush(stdout);
-        printf("Init data...................."); fflush(stdout);
+        printf("Init data                    "); fflush(stdout);
     #endif
     init_distribution(A, n, seed, dist);
 
     #ifdef DEBUG 
         printf("done\n"); fflush(stdout);
-        printf("Memcpy Host -> Dev..........."); fflush(stdout);
+        printf("Memcpy Host -> Dev           "); fflush(stdout);
     #endif
     cudaMemcpy(Ad, A, sizeof(REAL)*n, cudaMemcpyHostToDevice);
     #ifdef DEBUG 
         printf("done\n"); fflush(stdout);
-        printf("[kernel] FP32 -> FP16........"); fflush(stdout);
+        printf("[GPU] FP32 -> FP16           "); fflush(stdout);
     #endif
     convertFp32ToFp16 <<< (n + 256 - 1)/256, 256 >>> (Adh, Ad, n);
     cudaDeviceSynchronize();
@@ -123,7 +123,7 @@ int main(int argc, char **argv){
     cudaEventCreate(&stop);
     #ifdef DEBUG
         //printf("%s (BSIZE = %i)...............", algorithms[alg], BSIZE); fflush(stdout);
-        printf("[%15s]............", algorithms[alg]); fflush(stdout);
+        printf("[GPU] %-23s", algorithms[alg]); fflush(stdout);
     #endif
     cudaEventRecord(start);
     switch(alg){
@@ -149,7 +149,7 @@ int main(int argc, char **argv){
     cudaEventRecord(stop);
     cudaEventSynchronize(stop);
     #ifdef DEBUG
-        printf("done\n\n"); fflush(stdout);
+        printf("done\n"); fflush(stdout);
     #endif
     if(alg<4){
         cudaMemcpy(out, outd, sizeof(float)*1, cudaMemcpyDeviceToHost);
@@ -160,27 +160,32 @@ int main(int argc, char **argv){
     cudaEventElapsedTime(&time, start, stop);
     double goldtime = omp_get_wtime();
     #ifdef DEBUG 
-        printf("[CPU] Gold Reduction........"); fflush(stdout);
+        printf("[CPU] gold-reduction         "); fflush(stdout);
     #endif
     double cpusum = gold_reduction(A, n);
     #ifdef DEBUG 
-        printf("done\n"); fflush(stdout);
+        printf("done\n\n"); fflush(stdout);
     #endif
 
 
     goldtime = omp_get_wtime() - goldtime;
     #ifdef DEBUG
-        printf("Benchmark Summary:\n[%15s] => %f (%f secs)\nGold CPU          => %f (%f secs)\nDiff Result       = %f\nError             = %f%%\n\n", 
-                algorithms[alg],
-                (float)*out,
-                time/(REPEATS*1000.0),
-                (float)cpusum,
-                goldtime,
-                fabs((float)*out - cpusum),
-                fabs(100.0f*fabs((float)*out - cpusum)/cpusum));
+        printf("Benchmark Summary:\n\
+        Alg:%-15s => %f (%f secs)\n\
+        CPU gold reduction  => %f (%f secs)\n\
+        Diff Result         = %f\n\
+        Error               = %f%%\n\n", 
+        algorithms[alg],
+        (float)*out,
+        time/(REPEATS*1000.0),
+        (float)cpusum,
+        goldtime,
+        fabs((float)*out - cpusum),
+        fabs(100.0f*fabs((float)*out - cpusum)/cpusum));
     #else
-        printf("%f,%f,%f,%f,%f\n", time/(REPEATS),
-                (float)*out,cpusum,fabs((float)*out - cpusum),fabs(100.0f*fabs((float)*out - cpusum)/cpusum));
+        printf("%f,%f,%f,%f,%f\n", time/(REPEATS), 
+                (float)*out,cpusum,fabs((float)*out - cpusum),
+                fabs(100.0f*fabs((float)*out - cpusum)/cpusum));
     #endif
     free(A);
     free(out);
@@ -191,4 +196,3 @@ int main(int argc, char **argv){
     cudaFree(outd_recB);
     exit(EXIT_SUCCESS);
 }
-

@@ -3,9 +3,11 @@
 /*
 These may be encompassed in a class if desired. Trivial CUDA programs written for the purpose of benchmarking might prefer this approach.
 */
-bool pollThreadStatus = false;
+bool GPUpollThreadStatus = false;
+bool CPUpollThreadStatus = false;
 unsigned int deviceCount = 0;
 char deviceNameStr[64];
+std::string filename;
 
 nvmlReturn_t nvmlResult;
 nvmlDevice_t nvmlDeviceID;
@@ -13,19 +15,20 @@ nvmlPciInfo_t nvmPCIInfo;
 nvmlEnableState_t pmmode;
 nvmlComputeMode_t computeMode;
 
-pthread_t powerPollThread;
+pthread_t GPUpowerPollThread;
+pthread_t CPUpowerPollThread;
 
 /*
 Poll the GPU using nvml APIs.
 */
-void *powerPollingFunc(void *ptr)
-{
+void *GPUpowerPollingFunc(void *ptr){
 
 	unsigned int powerLevel = 0;
-	FILE *fp = fopen("Power_data.txt", "w+");
+	FILE *fp = fopen(filename.c_str(), "w+");
+    int timestep = 0;
 
-	while (pollThreadStatus)
-	{
+	while (GPUpollThreadStatus){
+        timestep++;
 		pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, 0);
 
 		// Get the power management mode of the GPU.
@@ -42,7 +45,7 @@ void *powerPollingFunc(void *ptr)
 		}
 
 		// The output file stores power in Watts.
-		fprintf(fp, "%.3lf\n", (powerLevel)/1000.0);
+		fprintf(fp, "%10i        %.3lf\n", timestep, (powerLevel)/1000.0);
 		pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, 0);
 	}
 
@@ -50,64 +53,52 @@ void *powerPollingFunc(void *ptr)
 	pthread_exit(0);
 }
 
+
 /*
 Start power measurement by spawning a pthread that polls the GPU.
 Function needs to be modified as per usage to handle errors as seen fit.
 */
-void nvmlAPIRun()
-{
+void GPUPowerBegin(const char *alg){
 	int i;
-
 	// Initialize nvml.
 	nvmlResult = nvmlInit();
-	if (NVML_SUCCESS != nvmlResult)
-	{
+	if (NVML_SUCCESS != nvmlResult){
 		printf("NVML Init fail: %s\n", nvmlErrorString(nvmlResult));
 		exit(0);
 	}
 
 	// Count the number of GPUs available.
 	nvmlResult = nvmlDeviceGetCount(&deviceCount);
-	if (NVML_SUCCESS != nvmlResult)
-	{
+	if (NVML_SUCCESS != nvmlResult){
 		printf("Failed to query device count: %s\n", nvmlErrorString(nvmlResult));
 		exit(0);
 	}
 
-	for (i = 0; i < deviceCount; i++)
-	{
+	for (i = 0; i < deviceCount; i++){
 		// Get the device ID.
 		nvmlResult = nvmlDeviceGetHandleByIndex(i, &nvmlDeviceID);
-		if (NVML_SUCCESS != nvmlResult)
-		{
+		if (NVML_SUCCESS != nvmlResult){
 			printf("Failed to get handle for device %d: %s\n", i, nvmlErrorString(nvmlResult));
 			exit(0);
 		}
-
 		// Get the name of the device.
 		nvmlResult = nvmlDeviceGetName(nvmlDeviceID, deviceNameStr, sizeof(deviceNameStr)/sizeof(deviceNameStr[0]));
-		if (NVML_SUCCESS != nvmlResult)
-		{
+		if (NVML_SUCCESS != nvmlResult){
 			printf("Failed to get name of device %d: %s\n", i, nvmlErrorString(nvmlResult));
 			exit(0);
 		}
-
 		// Get PCI information of the device.
 		nvmlResult = nvmlDeviceGetPciInfo(nvmlDeviceID, &nvmPCIInfo);
-		if (NVML_SUCCESS != nvmlResult)
-		{
+		if (NVML_SUCCESS != nvmlResult){
 			printf("Failed to get PCI info of device %d: %s\n", i, nvmlErrorString(nvmlResult));
 			exit(0);
 		}
-
 		// Get the compute mode of the device which indicates CUDA capabilities.
 		nvmlResult = nvmlDeviceGetComputeMode(nvmlDeviceID, &computeMode);
-		if (NVML_ERROR_NOT_SUPPORTED == nvmlResult)
-		{
+		if (NVML_ERROR_NOT_SUPPORTED == nvmlResult){
 			printf("This is not a CUDA-capable device.\n");
 		}
-		else if (NVML_SUCCESS != nvmlResult)
-		{
+		else if (NVML_SUCCESS != nvmlResult){
 			printf("Failed to get compute mode for device %i: %s\n", i, nvmlErrorString(nvmlResult));
 			exit(0);
 		}
@@ -117,13 +108,11 @@ void nvmlAPIRun()
 	// If there are multiple GPUs that can be used by the system, this needs to be done with care.
 	// Test thoroughly and ensure the correct device ID is being used.
 	nvmlResult = nvmlDeviceGetHandleByIndex(0, &nvmlDeviceID);
-
-	pollThreadStatus = true;
-
-	const char *message = "Test";
-	int iret = pthread_create(&powerPollThread, NULL, powerPollingFunc, (void*) message);
-	if (iret)
-	{
+	GPUpollThreadStatus = true;
+    filename = std::string("data/power-") + std::string(alg) + std::string(".dat");
+	const char *message = "GPU-power";
+	int iret = pthread_create(&GPUpowerPollThread, NULL, GPUpowerPollingFunc, (void*) message);
+	if (iret){
 		fprintf(stderr,"Error - pthread_create() return code: %d\n",iret);
 		exit(0);
 	}
@@ -132,10 +121,9 @@ void nvmlAPIRun()
 /*
 End power measurement. This ends the polling thread.
 */
-void nvmlAPIEnd()
-{
-	pollThreadStatus = false;
-	pthread_join(powerPollThread, NULL);
+void GPUPowerEnd(){
+	GPUpollThreadStatus = false;
+	pthread_join(GPUpowerPollThread, NULL);
 
 	nvmlResult = nvmlShutdown();
 	if (NVML_SUCCESS != nvmlResult)
@@ -185,3 +173,74 @@ int getNVMLError(nvmlReturn_t resultToCheck)
 
 	return 0;
 }
+
+
+/*
+Start power measurement by spawning a pthread that polls the CPU.
+Function needs to be modified as per usage to handle errors as seen fit.
+*/
+void CPUPowerBegin(const char *alg){
+
+	int i;
+	CPUpollThreadStatus = true;
+    filename = std::string("data/power-") + std::string(alg) + std::string(".dat");
+	const char *message = "CPU-Power";
+	int iret = pthread_create(&CPUpowerPollThread, NULL, CPUpowerPollingFunc, (void*) message);
+	if (iret)
+	{
+		fprintf(stderr,"Error - pthread_create() return code: %d\n",iret);
+		exit(0);
+	}
+}
+
+
+/*
+End CPU power measurement. This ends the polling thread.
+*/
+void CPUPowerEnd(){
+	CPUpollThreadStatus = false;
+	pthread_join(CPUpowerPollThread, NULL);
+}
+
+
+void* CPUpowerPollingFunc(void *ptr){
+	int ms_pause = 100;       // sample every 100ms
+	Rapl *rapl = new Rapl();
+	unsigned int powerLevel = 0;
+    int timestep = 0;
+	//ofstream outfile;
+	//outfile.open(filename.c_str(), ios::out | ios::trunc);
+	FILE *fp = fopen(filename.c_str(), "w+");
+	while(CPUpollThreadStatus) {
+        timestep++;
+		pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, 0);
+		usleep(1000 * ms_pause);
+		rapl->sample();
+
+		// Write sample to outfile
+		//outfile <<  timestep << "  " << rapl->pkg_current_power()  << "  " << rapl->pp0_current_power()  << "  " << rapl->pp1_current_power()  << "  " << rapl->dram_current_power() << "  " << rapl->total_time() << endl;
+        fprintf(fp, "%10i  %f  %f  %f  %f  %f\n",
+        rapl->pkg_current_power(),
+        rapl->pp0_current_power(),
+        rapl->pp1_current_power(),
+        rapl->dram_current_power(),
+        rapl->total_time());
+
+		// Write sample to terminal
+		//cout << "(THREAD) \33[2K\r" // clear line
+		//		<< "power=" << rapl->pkg_current_power()
+		//		<< "\tTime=" << rapl->current_time();
+		//cout.flush();
+		pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, 0);
+	}
+
+	// Print totals
+	//cout << endl 
+	//	<< "\tTotal Energy:\t" << rapl->pkg_total_energy() << " J" << endl
+	//	<< "\tAverage Power:\t" << rapl->pkg_average_power() << " W" << endl
+	//	<< "\tTime:\t" << rapl->total_time() << " sec" << endl;
+
+    fclose(fp);
+	pthread_exit(0);
+}
+

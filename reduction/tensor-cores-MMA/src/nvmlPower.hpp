@@ -13,10 +13,20 @@ Header file including necessary nvml headers.
 #include <cuda_runtime.h>
 #include <time.h>
 #include <unistd.h>
+#include <string>
+#include "Rapl.h"
 
-void nvmlAPIRun();
-void nvmlAPIEnd();
-void *powerPollingFunc(void *ptr);
+// GPU power measure functions
+void GPUPowerBegin(const char *alg);
+void GPUPowerEnd();
+
+// CPU power measure functions
+void CPUPowerBegin(const char *alg);
+void CPUPowerEnd();
+
+// pthread functions
+void *GPUpowerPollingFunc(void *ptr);
+void *CPUpowerPollingFunc(void *ptr);
 int getNVMLError(nvmlReturn_t resultToCheck);
 
 #endif
