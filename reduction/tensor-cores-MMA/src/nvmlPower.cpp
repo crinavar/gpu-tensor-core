@@ -220,6 +220,7 @@ void* CPUpowerPollingFunc(void *ptr){
 		// Write sample to outfile
 		//outfile <<  timestep << "  " << rapl->pkg_current_power()  << "  " << rapl->pp0_current_power()  << "  " << rapl->pp1_current_power()  << "  " << rapl->dram_current_power() << "  " << rapl->total_time() << endl;
         fprintf(fp, "%10i  %f  %f  %f  %f  %f\n",
+        timestep,
         rapl->pkg_current_power(),
         rapl->pp0_current_power(),
         rapl->pp1_current_power(),
