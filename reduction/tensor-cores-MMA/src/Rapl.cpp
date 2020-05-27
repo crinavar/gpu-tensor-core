@@ -54,6 +54,7 @@
 #define SIGNATURE_MASK                 0xFFFF0
 #define IVYBRIDGE_E                    0x306F0
 #define SANDYBRIDGE_E                  0x206D0
+#define COFFEE_LAKE                    0x906E0
 
 
 Rapl::Rapl() {
@@ -103,6 +104,9 @@ bool Rapl::detect_pp1() {
 			:"%ebx","%ecx","%edx");  // clobbered registers
 
 	uint32_t cpu_signature = eax & SIGNATURE_MASK;
+    #ifdef POWER
+        printf("CPU signature: %x\n", cpu_signature);
+    #endif
 	if (cpu_signature == SANDYBRIDGE_E || cpu_signature == IVYBRIDGE_E) {
 		return false;
 	}
