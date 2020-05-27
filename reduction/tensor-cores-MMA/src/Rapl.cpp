@@ -52,9 +52,12 @@
 #define TIME_UNIT_MASK                 0xF000
 
 #define SIGNATURE_MASK                 0xFFFF0
+
+// CPU signature codes, useful for filtering uncompatible measures
 #define IVYBRIDGE_E                    0x306F0
 #define SANDYBRIDGE_E                  0x206D0
 #define COFFEE_LAKE                    0x906E0
+#define BROADWELL_E                    0x50650
 
 
 Rapl::Rapl() {
@@ -104,10 +107,13 @@ bool Rapl::detect_pp1() {
 			:"%ebx","%ecx","%edx");  // clobbered registers
 
 	uint32_t cpu_signature = eax & SIGNATURE_MASK;
-    #ifdef POWER
-        printf("CPU signature: %x\n", cpu_signature);
-    #endif
-	if (cpu_signature == SANDYBRIDGE_E || cpu_signature == IVYBRIDGE_E) {
+    	#ifdef DEBUG
+        	printf("CPU signature: %x\n", cpu_signature); fflush(stdout);
+    	#endif
+	if (cpu_signature == SANDYBRIDGE_E || cpu_signature == IVYBRIDGE_E || cpu_signature == BROADWELL_E) {
+		#ifdef DEBUG
+			printf("PP1 measure not compatible for CPU signature: %x\n", cpu_signature); fflush(stdout);
+		#endif
 		return false;
 	}
 	return true;
