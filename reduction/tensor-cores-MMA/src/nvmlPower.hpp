@@ -16,6 +16,8 @@ Header file including necessary nvml headers.
 #include <string>
 #include "Rapl.h"
 
+#define SAMPLE_MS  10
+
 // GPU power measure functions
 void GPUPowerBegin(const char *alg);
 void GPUPowerEnd();

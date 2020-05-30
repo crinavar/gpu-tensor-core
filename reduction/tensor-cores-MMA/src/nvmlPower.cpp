@@ -26,10 +26,12 @@ void *GPUpowerPollingFunc(void *ptr){
 	unsigned int powerLevel = 0;
 	FILE *fp = fopen(filename.c_str(), "w+");
     int timestep = 0;
+    int ms_pause = 33;
 
 	while (GPUpollThreadStatus){
         timestep++;
 		pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, 0);
+		usleep(1000 * SAMPLE_MS);
 
 		// Get the power management mode of the GPU.
 		nvmlResult = nvmlDeviceGetPowerManagementMode(nvmlDeviceID, &pmmode);
@@ -204,7 +206,7 @@ void CPUPowerEnd(){
 
 
 void* CPUpowerPollingFunc(void *ptr){
-	int ms_pause = 100;       // sample every 100ms
+	int ms_pause = 33;       // sample every 100ms
 	Rapl *rapl = new Rapl();
 	unsigned int powerLevel = 0;
     int timestep = 0;
@@ -214,7 +216,7 @@ void* CPUpowerPollingFunc(void *ptr){
 	while(CPUpollThreadStatus) {
         timestep++;
 		pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, 0);
-		usleep(1000 * ms_pause);
+		usleep(1000 * SAMPLE_MS);
 		rapl->sample();
 
 		// Write sample to outfile

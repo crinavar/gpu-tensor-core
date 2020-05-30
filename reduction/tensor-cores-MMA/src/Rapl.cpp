@@ -57,7 +57,8 @@
 #define IVYBRIDGE_E                    0x306F0
 #define SANDYBRIDGE_E                  0x206D0
 #define COFFEE_LAKE                    0x906E0
-#define BROADWELL_E                    0x50650
+#define SKYLAKE_SERVER                 0x50650
+#define BROADWELL_E                    0x406F0
 
 
 Rapl::Rapl() {
