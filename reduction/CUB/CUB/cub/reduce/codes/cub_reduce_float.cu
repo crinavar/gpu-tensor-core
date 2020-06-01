@@ -51,6 +51,7 @@
 #include <cub/util_allocator.cuh>
 #include <cub/device/device_reduce.cuh>
 
+#include "nvmlPower.hpp"
 #include "../../test/test_util.h"
 
 using namespace cub;
@@ -124,8 +125,11 @@ double Initialize_uniform(float *h_in, int num_items, int seed)
 /**
  * Main
  */
-int main(int argc, char** argv)
-{
+int main(int argc, char** argv){
+    if(argc != 6){
+        fprintf(stderr, "run as ./cub-float dev n dist seed repeat\n\n"); fflush(stdout);
+        exit(EXIT_FAILURE);
+    }
     srand(time(NULL));
     //problem size by console
     int num_items = atoi(argv[2]);
@@ -141,6 +145,7 @@ int main(int argc, char** argv)
     int repeat = atoi(argv[5]);
     int g_timing_iterations = repeat;
     // Initialize command line
+    printf("num items = %i\n", num_items);
     CommandLineArgs args(argc, argv);
     g_verbose = args.CheckCmdLineFlag("v");
     args.GetCmdLineArgument("n", num_items);
@@ -221,6 +226,11 @@ int main(int argc, char** argv)
     CubDebugExit(cudaMemcpy(d_in, h_in, sizeof(float) * num_items, cudaMemcpyHostToDevice));
     timer.Start();
 
+    #ifdef POWER
+        GPUPowerBegin("CUB-float");
+        printf("Started Measuring power, press enter...\n"); fflush(stdout);
+        getchar();
+    #endif
     for (int i = 0; i < g_timing_iterations; ++i)
     {
         // Copy problem to device
@@ -232,6 +242,11 @@ int main(int argc, char** argv)
         cudaDeviceSynchronize();
         //elapsed_millis += timer.ElapsedMillis();
     }
+    #ifdef POWER
+        printf("DONE: press enter to stop\n");
+        getchar();
+        GPUPowerEnd();
+    #endif
     timer.Stop();
     elapsed_millis = timer.ElapsedMillis();
 
