@@ -28,7 +28,7 @@ void *GPUpowerPollingFunc(void *ptr){
     int timestep = 0;
     int ms_pause = 33;
 
-	while (GPUpollThreadStatus){
+	while(GPUpollThreadStatus){
         timestep++;
 		pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, 0);
 		usleep(1000 * SAMPLE_MS);
@@ -50,7 +50,6 @@ void *GPUpowerPollingFunc(void *ptr){
 		fprintf(fp, "%10i        %.3lf\n", timestep, (powerLevel)/1000.0);
 		pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, 0);
 	}
-
 	fclose(fp);
 	pthread_exit(0);
 }
