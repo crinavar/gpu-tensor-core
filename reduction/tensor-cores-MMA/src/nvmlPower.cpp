@@ -216,32 +216,16 @@ void* CPUpowerPollingFunc(void *ptr){
         timestep++;
 		pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, 0);
 		usleep(1000 * SAMPLE_MS);
+
+        // sample values
 		rapl->sample();
 
 		// Write sample to outfile
-		//outfile <<  timestep << "  " << rapl->pkg_current_power()  << "  " << rapl->pp0_current_power()  << "  " << rapl->pp1_current_power()  << "  " << rapl->dram_current_power() << "  " << rapl->total_time() << endl;
-        fprintf(fp, "%10i  %f  %f  %f  %f  %f\n",
-        timestep,
-        rapl->pkg_current_power(),
-        rapl->pp0_current_power(),
-        rapl->pp1_current_power(),
-        rapl->dram_current_power(),
-        rapl->total_time());
-
-		// Write sample to terminal
-		//cout << "(THREAD) \33[2K\r" // clear line
-		//		<< "power=" << rapl->pkg_current_power()
-		//		<< "\tTime=" << rapl->current_time();
-		//cout.flush();
+        fprintf(fp, "%10i  %f  %f  %f  %f  %f\n", timestep, rapl->pkg_current_power(), rapl->pp0_current_power(), rapl->pp1_current_power(), rapl->dram_current_power(), rapl->total_time());
 		pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, 0);
 	}
-
-	// Print totals
-	//cout << endl 
-	//	<< "\tTotal Energy:\t" << rapl->pkg_total_energy() << " J" << endl
-	//	<< "\tAverage Power:\t" << rapl->pkg_average_power() << " W" << endl
-	//	<< "\tTime:\t" << rapl->total_time() << " sec" << endl;
-
+    // Print totals
+    printf("\tTotal Energy: %f J\n\tAverage Power: %f W\n\tTime: %f\n\n", rapl->pkg_total_energy(), rapl->pkg_average_power(), rapl->total_time());
     fclose(fp);
 	pthread_exit(0);
 }
