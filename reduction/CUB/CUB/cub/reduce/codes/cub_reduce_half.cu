@@ -56,6 +56,7 @@
 #include <cub/util_allocator.cuh>
 #include <cub/device/device_reduce.cuh>
 
+#include "nvmlPower.hpp"
 #include "../../test/test_util.h"
 //#include "../../test/half.h"
 
@@ -156,11 +157,10 @@ double Initialize_uniform(float *h_in, int num_items, int seed)
 /**
  * Main
  */
-int main(int argc, char** argv)
-{
-    if(argv[1]==""){
-        printf("\fNumber of items must be given by console\n");
-        return 0;
+int main(int argc, char** argv){
+    if(argc != 6){
+        fprintf(stderr, "run as ./cub-half dev n dist seed repeat\n\n"); fflush(stdout);
+        exit(EXIT_FAILURE);
     }
     int num_items = atoi(argv[2]);
 //    srand(time(NULL));
@@ -171,6 +171,9 @@ int main(int argc, char** argv)
     int seed = atoi(argv[4]);
     int repeat = atoi(argv[5]);
     int g_timing_iterations = repeat;
+
+
+    printf("num items = %i\n", num_items);
     //printf("%i\n",seed);
     cudaSetDevice(dev);
     // Initialize command line
@@ -290,6 +293,11 @@ int main(int argc, char** argv)
 
 
     CubDebugExit(cudaMemcpy(d_in, h_in, sizeof(float) * num_items, cudaMemcpyHostToDevice));
+    #ifdef POWER
+        GPUPowerBegin("CUB-half");
+        printf("Started Measuring power, press enter...\n"); fflush(stdout);
+        getchar();
+    #endif
     timer.Start();
     for (int i = 0; i < g_timing_iterations; ++i)
     {
@@ -303,6 +311,11 @@ int main(int argc, char** argv)
         //elapsed_millis += timer.ElapsedMillis();
     }
     timer.Stop();
+    #ifdef POWER
+        printf("DONE: press enter to stop\n");
+        getchar();
+        GPUPowerEnd();
+    #endif
     elapsed_millis = timer.ElapsedMillis();
     
     // Check for kernel errors and STDIO from the kernel, if any

@@ -4,9 +4,9 @@ void warpshuffle_reduction(half *Adh, float *outd, long n, int REPEATS){
     dim3 block = dim3(BSIZE, 1, 1);
     dim3 grid = dim3((n + BSIZE -1)/BSIZE, 1, 1);
     #ifdef POWER
-        printf("Press enter to start measuring power\n"); fflush(stdout);
-        getchar();
         GPUPowerBegin("warp-shuffle");
+        printf("Started Measuring power, press enter...\n"); fflush(stdout);
+        getchar();
     #endif
     for(int i=0; i<REPEATS; ++i){
         cudaMemset(outd, 0, sizeof(REAL)*1);
@@ -31,9 +31,9 @@ void recurrence_reduction(half *Adh, float *outd, half *outd_recA, half *outd_re
     float resf;
     const int bs = BSIZE >> 5;
     #ifdef POWER
-        printf("Press enter to start measuring power\n"); fflush(stdout);
-        getchar();
         GPUPowerBegin("recurrence");
+        printf("Started Measuring power, press enter...\n"); fflush(stdout);
+        getchar();
     #endif
     for(int i=0; i<REPEATS; ++i){
         long dn = n;
@@ -95,9 +95,9 @@ void singlepass_reduction(half *Adh, float *outd, long n, int REPEATS){
         printf("grid (%i, %i, %i)    block(%i, %i, %i)\n", grid.x, grid.y, grid.z, block.x, block.y, block.z);
     #endif
     #ifdef POWER
-        printf("Press enter to start measuring power\n"); fflush(stdout);
-        getchar();
         GPUPowerBegin("single-pass");
+        printf("Started Measuring power, press enter...\n"); fflush(stdout);
+        getchar();
     #endif
     for(int i=0; i<REPEATS; ++i){
         cudaMemset(outd, 0, sizeof(REAL)*1);
@@ -124,9 +124,9 @@ void split_reduction(half *Adh, float *outd, long n, float factor_ns, int REPEAT
         printf("grid (%i, %i, %i)    block(%i, %i, %i)  DIFF %i\n", grid.x, grid.y, grid.z, block.x, block.y, block.z,DIFF);
     #endif
     #ifdef POWER
-        printf("Press enter to start measuring power\n"); fflush(stdout);
-        getchar();
         GPUPowerBegin("split");
+        printf("Started Measuring power, press enter...\n"); fflush(stdout);
+        getchar();
     #endif
     for(int i=0; i<REPEATS; ++i){
         cudaMemset(outd, 0, sizeof(REAL)*1);
@@ -146,14 +146,14 @@ template<class T>
 void omp_reduction(float *A, float *out, long n, int REPEATS){
     // variant 1: just one parallel region opened for all repetitions
     #ifdef POWER
-        printf("Press enter to start measuring power\n"); fflush(stdout);
-        getchar();
         if(typeid(T) == typeid(float)){
             CPUPowerBegin(OMP_REDUCTION_FLOAT);
         }
         else{
             CPUPowerBegin(OMP_REDUCTION_DOUBLE);
         }
+        printf("Started Measuring power, press enter...\n"); fflush(stdout);
+        getchar();
     #endif
     T acc;
     #pragma omp parallel shared(A,out, acc) num_threads(NPROC)
