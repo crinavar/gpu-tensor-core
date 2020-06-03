@@ -6,7 +6,7 @@ void warpshuffle_reduction(half *Adh, float *outd, long n, int REPEATS){
     #ifdef POWER
         GPUPowerBegin("warp-shuffle");
         #ifdef POWER_DEBUG
-            printf("Measuring power consumption.....\n"); fflush(stdout);
+            printf("Measuring power consumption, press enter.....\n"); fflush(stdout);
             getchar();
         #endif
     #endif
@@ -37,7 +37,7 @@ void recurrence_reduction(half *Adh, float *outd, half *outd_recA, half *outd_re
     #ifdef POWER
         GPUPowerBegin("recurrence");
         #ifdef POWER_DEBUG
-            printf("Measuring power consumption.....\n"); fflush(stdout);
+            printf("Measuring power consumption, press enter.....\n"); fflush(stdout);
             getchar();
         #endif
     #endif
@@ -99,13 +99,13 @@ void singlepass_reduction(half *Adh, float *outd, long n, int REPEATS){
     int bs = BSIZE >> 5;
     dim3 block = dim3(BSIZE, 1, 1);
     dim3 grid = dim3((n + (TCSQ*bs*(R)) - 1)/(TCSQ*bs*(R)), 1, 1);
-    #ifdef DEBUG
+    #ifdef KDEBUG
         printf("grid (%i, %i, %i)    block(%i, %i, %i)\n", grid.x, grid.y, grid.z, block.x, block.y, block.z);
     #endif
     #ifdef POWER
         GPUPowerBegin("single-pass");
         #ifdef POWER_DEBUG
-            printf("Measuring power consumption.....\n"); fflush(stdout);
+            printf("Measuring power consumption, press enter.....\n"); fflush(stdout);
             getchar();
         #endif
     #endif
@@ -138,7 +138,7 @@ void split_reduction(half *Adh, float *outd, long n, float factor_ns, int REPEAT
     #ifdef POWER
         GPUPowerBegin("split");
         #ifdef POWER_DEBUG
-            printf("Measuring power consumption.....\n"); fflush(stdout);
+            printf("Measuring power consumption, press enter.....\n"); fflush(stdout);
             getchar();
         #endif
     #endif
@@ -169,7 +169,7 @@ void omp_reduction(float *A, float *out, long n, int REPEATS){
             CPUPowerBegin(OMP_REDUCTION_DOUBLE);
         }
         #ifdef POWER_DEBUG
-            printf("Measuring power consumption.....\n"); fflush(stdout);
+            printf("Measuring power consumption, press enter.....\n"); fflush(stdout);
             getchar();
         #endif
     #endif
@@ -194,55 +194,3 @@ void omp_reduction(float *A, float *out, long n, int REPEATS){
         CPUPowerEnd();
     #endif
 }
-
-// BACKUP VARIANT (NOT BEING USED)
-//void recurrence_reduction_R1(half *Adh, float *outd, half *outd_recA, half *outd_recB, long n, int REPEATS){
-//    dim3 block, grid;
-//    int rlimit = 1;
-//    half *temp, resh;
-//    float resf;
-//    int bs = BSIZE >> 5;
-//    for(int i=0; i<REPEATS; ++i){
-//        long dn = n;
-//        block = dim3(BSIZE, 1, 1);
-//        grid = dim3((dn + (TCSQ*bs) - 1)/(TCSQ*bs), 1, 1);
-//        #ifdef DEBUG
-//            printf("[kernel sample #%i]\n", i+1);
-//            printf("dn=%12i >= rlimit =%5i  ", dn, rlimit);
-//            printf("grid(%5i, %i, %i) block(%i, %i, %i).......", grid.x, grid.y, grid.z, block.x, block.y, block.z);
-//        #endif
-//        kernel_recurrence_R1<<<grid, block>>>(Adh, outd_recA, dn);
-//        #ifdef DEBUG
-//            gpuErrchk( cudaPeekAtLastError() );
-//            gpuErrchk( cudaDeviceSynchronize() );
-//            printf("done\n");
-//        #endif
-//        cudaDeviceSynchronize();
-//        dn = (dn + TCSQ-1)/TCSQ;
-//        grid = dim3((dn + (TCSQ*bs) - 1)/(TCSQ*bs), 1, 1);
-//        while(dn > rlimit){
-//            #ifdef DEBUG
-//                printf("dn=%12i >= rlimit =%5i  ", dn, rlimit);
-//                printf("grid(%5i, %i, %i) block(%i, %i, %i).......", grid.x, grid.y, grid.z, block.x, block.y, block.z);
-//            #endif
-//            kernel_recurrence_R1<<<grid, block>>>(outd_recA, outd_recB, dn);
-//            cudaDeviceSynchronize();
-//            dn = (dn + TCSQ-1)/TCSQ;
-//            grid = dim3((dn + (TCSQ*bs) - 1)/(TCSQ*bs), 1, 1);
-//            #ifdef DEBUG
-//                gpuErrchk( cudaPeekAtLastError() );
-//                gpuErrchk( cudaDeviceSynchronize() );
-//                printf("done\n");
-//            #endif
-//            temp = outd_recB;
-//            outd_recB = outd_recA;
-//            outd_recA = temp;
-//        }
-//        #ifdef DEBUG
-//            printf("\n");
-//        #endif
-//    }
-//    cudaMemcpy(&resh, outd_recA, sizeof(half), cudaMemcpyDeviceToHost);    
-//    resf = __half2float(resh); 
-//    cudaMemcpy(outd, &resf, sizeof(float), cudaMemcpyHostToDevice);    
-//}

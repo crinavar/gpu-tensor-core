@@ -1,8 +1,5 @@
 #include "nvmlPower.hpp"
 
-/*
-These may be encompassed in a class if desired. Trivial CUDA programs written for the purpose of benchmarking might prefer this approach.
-*/
 bool GPUpollThreadStatus = false;
 bool CPUpollThreadStatus = false;
 unsigned int deviceCount = 0;
@@ -14,6 +11,7 @@ nvmlDevice_t nvmlDeviceID;
 nvmlPciInfo_t nvmPCIInfo;
 nvmlEnableState_t pmmode;
 nvmlComputeMode_t computeMode;
+Rapl *rapl;
 
 pthread_t GPUpowerPollThread;
 pthread_t CPUpowerPollThread;
@@ -30,8 +28,10 @@ void *GPUpowerPollingFunc(void *ptr){
 	gettimeofday(&t1, NULL);
     double dt = 0.0;
     double acctime = 0.0;
-    double accenergy = 0.0f;
+    double accenergy = 0.0;
     double power = 0.0;
+    // column names
+	fprintf(fp, "%-15s %-15s %-15s %-15s %-15s %-15s\n", "#timestep", "power", "acc-energy", "avg-power", "dt", "acc-time");
     
 
 	while(GPUpollThreadStatus){
@@ -53,9 +53,10 @@ void *GPUpowerPollingFunc(void *ptr){
 			nvmlResult = nvmlDeviceGetPowerUsage(nvmlDeviceID, &powerLevel);
 		}
         power = (double)powerLevel/1000.0;
-        accenergy = power*dt;
+        accenergy += power*dt;
 		// The output file stores power in Watts.
-		fprintf(fp, "%10i        %.3lf        %f       %f       %f\n", timestep, power, accenergy, dt, acctime);
+        fprintf(fp, "%-15i %-15f %-15f %-15f %-15f %-15f\n", 
+                timestep, power, accenergy, accenergy/acctime, dt, acctime);
         t1 = t2;
 		pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, 0);
 	}
@@ -186,46 +187,34 @@ int getNVMLError(nvmlReturn_t resultToCheck)
 }
 
 
-/*
-Start power measurement by spawning a pthread that polls the CPU.
-Function needs to be modified as per usage to handle errors as seen fit.
-*/
+// Begin measuring CPU power
 void CPUPowerBegin(const char *alg){
-
-	int i;
 	CPUpollThreadStatus = true;
     filename = std::string("data/power-") + std::string(alg) + std::string(".dat");
-    Rapl *rapl = new Rapl();
-	int iret = pthread_create(&CPUpowerPollThread, NULL, CPUpowerPollingFunc, (void*)rapl);
-	if (iret){
-		fprintf(stderr,"Error - pthread_create() return code: %d\n",iret);
+    rapl = new Rapl();
+	int code = pthread_create(&CPUpowerPollThread, NULL, CPUpowerPollingFunc, (void*)NULL);
+	if (code){
+		fprintf(stderr,"Error - pthread_create() return code: %d\n", code);
 		exit(0);
 	}
 }
 
-
-/*
-End CPU power measurement. This ends the polling thread.
-*/
+// Stop measuring CPU power
 void CPUPowerEnd(){
 	CPUpollThreadStatus = false;
-    void *status;
-	pthread_join(CPUpowerPollThread, &status);
-    Rapl *rapl = (Rapl*)status;
+	pthread_join(CPUpowerPollThread, 0);
     printf("\n\tTotal Energy: %f J\n\tAverage Power: %f W\n\tTime: %f\n\n", rapl->pkg_total_energy(), rapl->pkg_average_power(), rapl->total_time());
 }
 
 
+
+// CPU power measure thread
 void* CPUpowerPollingFunc(void *ptr){
-	int ms_pause = 33;       // sample every 100ms
-	//Rapl *rapl = new Rapl();
-	Rapl *rapl = (Rapl*)ptr;
-	unsigned int powerLevel = 0;
     int timestep = 0;
-	//ofstream outfile;
-	//outfile.open(filename.c_str(), ios::out | ios::trunc);
+    double dt = 0.0, acctime = 0.0, accenergy = 0.0, power = 0.0;
 	FILE *fp = fopen(filename.c_str(), "w+");
-	while(CPUpollThreadStatus) {
+	fprintf(fp, "%-15s %-15s %-15s %-15s %-15s %-15s\n", "#timestep", "power", "acc-energy", "avg-power", "dt", "acc-time");
+	while(CPUpollThreadStatus){
         timestep++;
 		pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, 0);
 		usleep(1000 * SAMPLE_MS);
@@ -233,11 +222,11 @@ void* CPUpowerPollingFunc(void *ptr){
         // sample values
 		rapl->sample();
 
-		// Write sample to outfile
-        fprintf(fp, "%10i  %f  %f  %f  %f  %f\n", timestep, rapl->pkg_current_power(), rapl->pp0_current_power(), rapl->pp1_current_power(), rapl->dram_current_power(), rapl->total_time());
+		// Write current value of CPU PKG
+        fprintf(fp, "%-15i %-15f %-15f %-15f %-15f %-15f\n", 
+                timestep, rapl->pkg_current_power(), rapl->pkg_total_energy(), rapl->pkg_average_power(), rapl->current_time(), rapl->total_time());
 		pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, 0);
 	}
     fclose(fp);
-	pthread_exit((void *)rapl);
+	pthread_exit(0);
 }
-
