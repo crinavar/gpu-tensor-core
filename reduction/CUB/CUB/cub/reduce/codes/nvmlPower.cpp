@@ -1,8 +1,5 @@
 #include "nvmlPower.hpp"
 
-/*
-These may be encompassed in a class if desired. Trivial CUDA programs written for the purpose of benchmarking might prefer this approach.
-*/
 bool GPUpollThreadStatus = false;
 bool CPUpollThreadStatus = false;
 unsigned int deviceCount = 0;
@@ -14,6 +11,7 @@ nvmlDevice_t nvmlDeviceID;
 nvmlPciInfo_t nvmPCIInfo;
 nvmlEnableState_t pmmode;
 nvmlComputeMode_t computeMode;
+Rapl *rapl;
 
 pthread_t GPUpowerPollThread;
 pthread_t CPUpowerPollThread;
@@ -26,13 +24,23 @@ void *GPUpowerPollingFunc(void *ptr){
 	unsigned int powerLevel = 0;
 	FILE *fp = fopen(filename.c_str(), "w+");
     int timestep = 0;
-    int ms_pause = 33;
+    struct timeval t1, t2;
+	gettimeofday(&t1, NULL);
+    double dt = 0.0;
+    double acctime = 0.0;
+    double accenergy = 0.0;
+    double power = 0.0;
+    // column names
+	fprintf(fp, "%-15s %-15s %-15s %-15s %-15s %-15s\n", "#timestep", "power", "acc-energy", "avg-power", "dt", "acc-time");
+    
 
 	while(GPUpollThreadStatus){
         timestep++;
 		pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, 0);
 		usleep(1000 * SAMPLE_MS);
-
+	    gettimeofday(&t2, NULL);
+        dt = (t2.tv_sec - t1.tv_sec) + ((t2.tv_usec - t1.tv_usec)/1000000.0);
+        acctime += dt;
 		// Get the power management mode of the GPU.
 		nvmlResult = nvmlDeviceGetPowerManagementMode(nvmlDeviceID, &pmmode);
 
@@ -40,17 +48,20 @@ void *GPUpowerPollingFunc(void *ptr){
 		getNVMLError(nvmlResult);
 
 		// Check if power management mode is enabled.
-		if (pmmode == NVML_FEATURE_ENABLED)
-		{
+		if (pmmode == NVML_FEATURE_ENABLED){
 			// Get the power usage in milliWatts.
 			nvmlResult = nvmlDeviceGetPowerUsage(nvmlDeviceID, &powerLevel);
 		}
-
+        power = (double)powerLevel/1000.0;
+        accenergy += power*dt;
 		// The output file stores power in Watts.
-		fprintf(fp, "%10i        %.3lf\n", timestep, (powerLevel)/1000.0);
+        fprintf(fp, "%-15i %-15f %-15f %-15f %-15f %-15f\n", 
+                timestep, power, accenergy, accenergy/acctime, dt, acctime);
+        t1 = t2;
 		pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, 0);
 	}
 	fclose(fp);
+
 	pthread_exit(0);
 }
 
@@ -117,12 +128,14 @@ void GPUPowerBegin(const char *alg){
 		fprintf(stderr,"Error - pthread_create() return code: %d\n",iret);
 		exit(0);
 	}
+	usleep(1000*COOLDOWN_MS);
 }
 
 /*
 End power measurement. This ends the polling thread.
 */
 void GPUPowerEnd(){
+	usleep(1000*COOLDOWN_MS);
 	GPUpollThreadStatus = false;
 	pthread_join(GPUpowerPollThread, NULL);
 
@@ -176,73 +189,48 @@ int getNVMLError(nvmlReturn_t resultToCheck)
 }
 
 
-/*
-Start power measurement by spawning a pthread that polls the CPU.
-Function needs to be modified as per usage to handle errors as seen fit.
-*/
+// Begin measuring CPU power
 void CPUPowerBegin(const char *alg){
-
-	int i;
-	CPUpollThreadStatus = true;
+    CPUpollThreadStatus = true;
     filename = std::string("data/power-") + std::string(alg) + std::string(".dat");
-	const char *message = "CPU-Power";
-	int iret = pthread_create(&CPUpowerPollThread, NULL, CPUpowerPollingFunc, (void*) message);
-	if (iret)
-	{
-		fprintf(stderr,"Error - pthread_create() return code: %d\n",iret);
+    rapl = new Rapl();
+	int code = pthread_create(&CPUpowerPollThread, NULL, CPUpowerPollingFunc, (void*)NULL);
+	if (code){
+		fprintf(stderr,"Error - pthread_create() return code: %d\n", code);
 		exit(0);
 	}
+	usleep(1000*COOLDOWN_MS);
 }
 
-
-/*
-End CPU power measurement. This ends the polling thread.
-*/
+// Stop measuring CPU power
 void CPUPowerEnd(){
+	usleep(1000*COOLDOWN_MS);
 	CPUpollThreadStatus = false;
-	pthread_join(CPUpowerPollThread, NULL);
+	pthread_join(CPUpowerPollThread, 0);
+    printf("\n\tTotal Energy: %f J\n\tAverage Power: %f W\n\tTime: %f\n\n", rapl->pkg_total_energy(), rapl->pkg_average_power(), rapl->total_time());
 }
 
 
+
+// CPU power measure thread
 void* CPUpowerPollingFunc(void *ptr){
-	int ms_pause = 33;       // sample every 100ms
-	Rapl *rapl = new Rapl();
-	unsigned int powerLevel = 0;
     int timestep = 0;
-	//ofstream outfile;
-	//outfile.open(filename.c_str(), ios::out | ios::trunc);
+    double dt = 0.0, acctime = 0.0, accenergy = 0.0, power = 0.0;
 	FILE *fp = fopen(filename.c_str(), "w+");
-	while(CPUpollThreadStatus) {
+	fprintf(fp, "%-15s %-15s %-15s %-15s %-15s %-15s\n", "#timestep", "power", "acc-energy", "avg-power", "dt", "acc-time");
+	while(CPUpollThreadStatus){
         timestep++;
 		pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, 0);
 		usleep(1000 * SAMPLE_MS);
+
+        // sample values
 		rapl->sample();
 
-		// Write sample to outfile
-		//outfile <<  timestep << "  " << rapl->pkg_current_power()  << "  " << rapl->pp0_current_power()  << "  " << rapl->pp1_current_power()  << "  " << rapl->dram_current_power() << "  " << rapl->total_time() << endl;
-        fprintf(fp, "%10i  %f  %f  %f  %f  %f\n",
-        timestep,
-        rapl->pkg_current_power(),
-        rapl->pp0_current_power(),
-        rapl->pp1_current_power(),
-        rapl->dram_current_power(),
-        rapl->total_time());
-
-		// Write sample to terminal
-		//cout << "(THREAD) \33[2K\r" // clear line
-		//		<< "power=" << rapl->pkg_current_power()
-		//		<< "\tTime=" << rapl->current_time();
-		//cout.flush();
+		// Write current value of CPU PKG
+        fprintf(fp, "%-15i %-15f %-15f %-15f %-15f %-15f\n", 
+                timestep, rapl->pkg_current_power(), rapl->pkg_total_energy(), rapl->pkg_average_power(), rapl->current_time(), rapl->total_time());
 		pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, 0);
 	}
-
-	// Print totals
-	//cout << endl 
-	//	<< "\tTotal Energy:\t" << rapl->pkg_total_energy() << " J" << endl
-	//	<< "\tAverage Power:\t" << rapl->pkg_average_power() << " W" << endl
-	//	<< "\tTime:\t" << rapl->total_time() << " sec" << endl;
-
     fclose(fp);
 	pthread_exit(0);
 }
-

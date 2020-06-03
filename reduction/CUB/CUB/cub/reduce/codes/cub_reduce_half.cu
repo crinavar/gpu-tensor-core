@@ -295,29 +295,26 @@ int main(int argc, char** argv){
     CubDebugExit(cudaMemcpy(d_in, h_in, sizeof(float) * num_items, cudaMemcpyHostToDevice));
     #ifdef POWER
         GPUPowerBegin("CUB-half");
-        printf("Started Measuring power, press enter...\n"); fflush(stdout);
-        getchar();
+	#ifdef POWER_DEBUG
+		printf("Started Measuring power, press enter...\n"); fflush(stdout);
+		getchar();
+	#endif
     #endif
     timer.Start();
-    for (int i = 0; i < g_timing_iterations; ++i)
-    {
-        // Copy problem to device
-        //timer.Start();
-
-        // Run aggregate
+    for (int i = 0; i < g_timing_iterations; ++i){
         CubDebugExit(DeviceReduce::Hsum(d_temp_storage, temp_storage_bytes,d_in_half, d_out_half, num_items));
-        //timer.Stop();
         cudaDeviceSynchronize();
-        //elapsed_millis += timer.ElapsedMillis();
     }
     timer.Stop();
     #ifdef POWER
-        printf("DONE: press enter to stop\n");
-        getchar();
+    	#ifdef POWER_DEBUG
+	        printf("DONE: press enter to stop\n");
+        	getchar();
+	#endif
         GPUPowerEnd();
     #endif
     elapsed_millis = timer.ElapsedMillis();
-    
+ 
     // Check for kernel errors and STDIO from the kernel, if any
     CubDebugExit(cudaPeekAtLastError());
     CubDebugExit(cudaDeviceSynchronize());

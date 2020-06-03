@@ -228,8 +228,10 @@ int main(int argc, char** argv){
 
     #ifdef POWER
         GPUPowerBegin("CUB-float");
-        printf("Started Measuring power, press enter...\n"); fflush(stdout);
-        getchar();
+	#ifdef POWER_DEBUG
+		printf("Started Measuring power, press enter...\n"); fflush(stdout);
+		getchar();
+	#endif
     #endif
     for (int i = 0; i < g_timing_iterations; ++i)
     {
@@ -243,8 +245,10 @@ int main(int argc, char** argv){
         //elapsed_millis += timer.ElapsedMillis();
     }
     #ifdef POWER
-        printf("DONE: press enter to stop\n");
-        getchar();
+	#ifdef POWER_DEBUG
+		printf("DONE: press enter to stop\n");
+		getchar();
+	#endif
         GPUPowerEnd();
     #endif
     timer.Stop();

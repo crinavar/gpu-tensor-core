@@ -108,11 +108,11 @@ bool Rapl::detect_pp1() {
 			:"%ebx","%ecx","%edx");  // clobbered registers
 
 	uint32_t cpu_signature = eax & SIGNATURE_MASK;
-    	#ifdef DEBUG
+    	#ifdef POWER_DEBUG
         	printf("CPU signature: %x\n", cpu_signature); fflush(stdout);
     	#endif
 	if (cpu_signature == SANDYBRIDGE_E || cpu_signature == IVYBRIDGE_E || cpu_signature == BROADWELL_E) {
-		#ifdef DEBUG
+		#ifdef POWER_DEBUG
 			printf("PP1 measure not compatible for CPU signature: %x\n", cpu_signature); fflush(stdout);
 		#endif
 		return false;
