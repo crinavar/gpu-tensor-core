@@ -128,12 +128,14 @@ void GPUPowerBegin(const char *alg){
 		fprintf(stderr,"Error - pthread_create() return code: %d\n",iret);
 		exit(0);
 	}
+	usleep(1000*COOLDOWN_MS);
 }
 
 /*
 End power measurement. This ends the polling thread.
 */
 void GPUPowerEnd(){
+	usleep(1000*COOLDOWN_MS);
 	GPUpollThreadStatus = false;
 	pthread_join(GPUpowerPollThread, NULL);
 
@@ -189,7 +191,7 @@ int getNVMLError(nvmlReturn_t resultToCheck)
 
 // Begin measuring CPU power
 void CPUPowerBegin(const char *alg){
-	CPUpollThreadStatus = true;
+    CPUpollThreadStatus = true;
     filename = std::string("data/power-") + std::string(alg) + std::string(".dat");
     rapl = new Rapl();
 	int code = pthread_create(&CPUpowerPollThread, NULL, CPUpowerPollingFunc, (void*)NULL);
@@ -197,10 +199,12 @@ void CPUPowerBegin(const char *alg){
 		fprintf(stderr,"Error - pthread_create() return code: %d\n", code);
 		exit(0);
 	}
+	usleep(1000*COOLDOWN_MS);
 }
 
 // Stop measuring CPU power
 void CPUPowerEnd(){
+	usleep(1000*COOLDOWN_MS);
 	CPUpollThreadStatus = false;
 	pthread_join(CPUpowerPollThread, 0);
     printf("\n\tTotal Energy: %f J\n\tAverage Power: %f W\n\tTime: %f\n\n", rapl->pkg_total_energy(), rapl->pkg_average_power(), rapl->total_time());
