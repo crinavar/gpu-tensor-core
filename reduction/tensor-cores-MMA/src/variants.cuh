@@ -5,8 +5,10 @@ void warpshuffle_reduction(half *Adh, float *outd, long n, int REPEATS){
     dim3 grid = dim3((n + BSIZE -1)/BSIZE, 1, 1);
     #ifdef POWER
         GPUPowerBegin("warp-shuffle");
-        printf("Started Measuring power, press enter...\n"); fflush(stdout);
-        getchar();
+        #ifdef POWER_DEBUG
+            printf("Measuring power consumption.....\n"); fflush(stdout);
+            getchar();
+        #endif
     #endif
     for(int i=0; i<REPEATS; ++i){
         cudaMemset(outd, 0, sizeof(REAL)*1);
@@ -17,8 +19,10 @@ void warpshuffle_reduction(half *Adh, float *outd, long n, int REPEATS){
         cudaDeviceSynchronize();
     }
     #ifdef POWER
-        printf("DONE: press enter to stop\n");
-        getchar();
+        #ifdef POWER_DEBUG
+            printf("done\n");
+            getchar();
+        #endif
         GPUPowerEnd();
     #endif
 }
@@ -32,8 +36,10 @@ void recurrence_reduction(half *Adh, float *outd, half *outd_recA, half *outd_re
     const int bs = BSIZE >> 5;
     #ifdef POWER
         GPUPowerBegin("recurrence");
-        printf("Started Measuring power, press enter...\n"); fflush(stdout);
-        getchar();
+        #ifdef POWER_DEBUG
+            printf("Measuring power consumption.....\n"); fflush(stdout);
+            getchar();
+        #endif
     #endif
     for(int i=0; i<REPEATS; ++i){
         long dn = n;
@@ -78,8 +84,10 @@ void recurrence_reduction(half *Adh, float *outd, half *outd_recA, half *outd_re
         #endif
     }
     #ifdef POWER
-        printf("DONE: press enter to stop\n");
-        getchar();
+        #ifdef POWER_DEBUG
+            printf("done\n");
+            getchar();
+        #endif
         GPUPowerEnd();
     #endif
     cudaMemcpy(&resh, outd_recA, sizeof(half), cudaMemcpyDeviceToHost);    
@@ -96,8 +104,10 @@ void singlepass_reduction(half *Adh, float *outd, long n, int REPEATS){
     #endif
     #ifdef POWER
         GPUPowerBegin("single-pass");
-        printf("Started Measuring power, press enter...\n"); fflush(stdout);
-        getchar();
+        #ifdef POWER_DEBUG
+            printf("Measuring power consumption.....\n"); fflush(stdout);
+            getchar();
+        #endif
     #endif
     for(int i=0; i<REPEATS; ++i){
         cudaMemset(outd, 0, sizeof(REAL)*1);
@@ -105,8 +115,10 @@ void singlepass_reduction(half *Adh, float *outd, long n, int REPEATS){
         cudaDeviceSynchronize();
     }
     #ifdef POWER
-        printf("DONE: press enter to stop\n");
-        getchar();
+        #ifdef POWER_DEBUG
+            printf("done\n");
+            getchar();
+        #endif
         GPUPowerEnd();
     #endif
 }
@@ -125,8 +137,10 @@ void split_reduction(half *Adh, float *outd, long n, float factor_ns, int REPEAT
     #endif
     #ifdef POWER
         GPUPowerBegin("split");
-        printf("Started Measuring power, press enter...\n"); fflush(stdout);
-        getchar();
+        #ifdef POWER_DEBUG
+            printf("Measuring power consumption.....\n"); fflush(stdout);
+            getchar();
+        #endif
     #endif
     for(int i=0; i<REPEATS; ++i){
         cudaMemset(outd, 0, sizeof(REAL)*1);
@@ -134,8 +148,10 @@ void split_reduction(half *Adh, float *outd, long n, float factor_ns, int REPEAT
         cudaDeviceSynchronize();
     }
     #ifdef POWER
-        printf("DONE: press enter to stop\n");
-        getchar();
+        #ifdef POWER_DEBUG
+            printf("done\n");
+            getchar();
+        #endif
         GPUPowerEnd();
     #endif
 }
@@ -152,8 +168,10 @@ void omp_reduction(float *A, float *out, long n, int REPEATS){
         else{
             CPUPowerBegin(OMP_REDUCTION_DOUBLE);
         }
-        printf("Started Measuring power, press enter...\n"); fflush(stdout);
-        getchar();
+        #ifdef POWER_DEBUG
+            printf("Measuring power consumption.....\n"); fflush(stdout);
+            getchar();
+        #endif
     #endif
     T acc;
     #pragma omp parallel shared(A,out, acc) num_threads(NPROC)
@@ -169,8 +187,10 @@ void omp_reduction(float *A, float *out, long n, int REPEATS){
     }
     *out = acc;
     #ifdef POWER
-        printf("DONE: press enter to stop\n");
-        getchar();
+        #ifdef POWER_DEBUG
+            printf("done\n");
+            getchar();
+        #endif
         CPUPowerEnd();
     #endif
 }

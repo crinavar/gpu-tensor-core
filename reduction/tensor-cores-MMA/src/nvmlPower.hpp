@@ -18,6 +18,7 @@ Header file including necessary nvml headers.
 
 #define SAMPLE_MS  10
 
+
 // GPU power measure functions
 void GPUPowerBegin(const char *alg);
 void GPUPowerEnd();
