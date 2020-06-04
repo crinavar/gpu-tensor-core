@@ -47,9 +47,9 @@ omp_data            = 'data/power-'.cpu.'-omp-nt10-double.dat'
 #print "single_pass_data: ".single_pass_data
 
 plot\
-        cub16_data          using ($1/100):2 title "CUB (half)"             with l   ls 3,\
-        cub32_data          using ($1/105):2 title "CUB (float)"            with l   ls 1,\
-        omp_data            using (($1-98)/100):2 title "OpenMP nt=10"     with l   ls 4,\
-        single_pass_data    using (($1-118)/100):2 title "single-pass"      with l   ls 2
+        cub16_data          using 6:2 title "CUB (half)"       with l   ls 3,\
+        cub32_data          using 6:2 title "CUB (float)"      with l   ls 1,\
+        omp_data            using 6:2 title "OpenMP nt=10"     with l   ls 4,\
+        single_pass_data    using 6:2 title "Single-pass"      with l   ls 2
 
 print "done!\n\n"
