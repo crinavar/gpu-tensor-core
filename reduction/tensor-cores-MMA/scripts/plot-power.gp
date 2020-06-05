@@ -10,7 +10,7 @@ dist = ARG3
 
 print "plot-power.gp\n CPU = ",cpu,"\n GPU = ",gpu,"\n dist: ",dist
 out = 'plots/power-'.cpu.'-'.gpu.'-'.dist.'.eps'
-mytitle = "Power Consumption (".gpu." | ".cpu.")\nn = 400M,  repeats = 1000"
+mytitle = "Power Consumption (".gpu." | ".cpu.")\nn = 400M, repeats = 1000"
 
 set autoscale                        # scale axes automatically
 set term postscript eps color blacktext "Courier" 24
@@ -22,18 +22,19 @@ set ylabel 'W' rotate by 0 offset 1
 set xtic auto                          # set xtics automatically
 set ytic auto                          # set ytics automatically
 set xrange [0:46]
-#set log x
+set log x
 
 set xlabel 'time [s]'
 set font "Courier, 20"
 set pointsize   0.5
 #set xtics format "%1.0s"
+set xtics (0.1, 1, 2, 5, 10, 20, 42)
 set key right top Left  font "Courier, 18"
 
-set style line 1 lt 1 lc rgb 'forest-green' dt "-.-"    pt 5    pi -6   lw 2 # green   
-set style line 2 lt 2 lc rgb 'black'        dt 1        pt 2    pi -6   lw 2 # orange
-set style line 3 lt 3 lc rgb 'web-blue'     dt "."      pt 6    pi -6   lw 2 # blue
-set style line 4 lt 4 lc rgb 'red'          dt 5        pt 11   pi -6   lw 2 # purple
+set style line 1 lt 1 lc rgb 'forest-green' dt "-.-"    pt 5    pi -6   lw 3 # green   
+set style line 2 lt 2 lc rgb 'black'        dt 1        pt 2    pi -6   lw 3 # orange
+set style line 3 lt 3 lc rgb 'web-blue'     dt "."      pt 6    pi -6   lw 3 # blue
+set style line 4 lt 4 lc rgb 'red'          dt 5        pt 11   pi -6   lw 3 # purple
 
 # variables
 single_pass_data    = 'data/power-'.gpu.'-single-pass.dat'

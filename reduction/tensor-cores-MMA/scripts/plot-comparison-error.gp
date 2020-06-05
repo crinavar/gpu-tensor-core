@@ -2,6 +2,7 @@ reset
 
 gpu  = ARG1
 dist = ARG2
+cpu  = ARG3
 
 print "plot-comparison-error.gp ---> GPU: ",gpu," dist: ",dist
 
@@ -9,18 +10,19 @@ out     = 'plots/comparison-error-'.gpu.'_'.dist.'.eps'
 mytitle = "Error vs CUB Library (".gpu.")\n".dist." Distribution\n "
 
 set autoscale # scale axes automatically
-set term postscript eps color blacktext "Courier" 24
+set term postscript eps color blacktext "Courier" 18
 set output out
-set title mytitle
+set title mytitle font "Courier, 22"
 
-set ylabel 'Error %' rotate by 90 offset 0
-#set yrange [0:0.002]
+set ylabel 'Error %' rotate by 90 offset -0.2
+#set yrange [0.000001:0.003]
 set log y
 
-set xlabel 'N x 10^{6}'
+set xlabel 'n x 10^{6}'
 set font "Courier, 20"
-set pointsize   0.5
+set pointsize   1.0
 set xtics format "%1.0s"
+set ytics format "10^{%L}"
 set key Left top right reverse samplen 3.0 font "Courier,18" spacing 1 
 
 set style line 1 lt 1 lc rgb 'forest-green' dt 1    pt 5    pi -6   lw 2 # green   
@@ -34,11 +36,9 @@ set style line 7 lt 1 lc rgb '#a2142f'              pt 8    pi -6   lw 2 # red
 singlepass = 'data/alg-singlepass-'.gpu.'-'.dist.'-B128.dat'
 cub16 = 'data/alg-CUB-FP16-'.gpu.'-'.dist.'.dat'
 cub32 = 'data/alg-CUB-FP32-'.gpu.'-'.dist.'.dat'
-ompFloat = 'data/alg-omp-float-'.cpu.'-'.dist.'-B1.dat'
-ompDouble = 'data/alg-omp-double-'.cpu.'-'.dist.'-B1.dat'
+ompDouble = 'data/alg-omp-double-'.cpu.'-'.dist.'-B32.dat'
 
 plot    singlepass  using 1:12 title "single-pass" with lp ls 1,\
         cub16       using 1:9 title "CUB (half)"  with lp ls 3,\
-        cub32       using 1:9 title "CUB (float)" with lp ls 2
-        ompFloat    using 1:12 title "OpenMP ".cpu." (float)" with lp ls 4,\
-        ompDouble   using 1:12 title "OpenMP ".cpu." (double)" with lp ls 5
+        cub32       using 1:9 title "CUB (float)" with p ls 2,\
+        ompDouble   using 1:12 title "OpenMP ".cpu."" with p ls 4

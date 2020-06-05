@@ -42,16 +42,16 @@ void *GPUpowerPollingFunc(void *ptr){
         dt = (t2.tv_sec - t1.tv_sec) + ((t2.tv_usec - t1.tv_usec)/1000000.0);
         acctime += dt;
 		// Get the power management mode of the GPU.
-		nvmlResult = nvmlDeviceGetPowerManagementMode(nvmlDeviceID, &pmmode);
+		//nvmlResult = nvmlDeviceGetPowerManagementMode(nvmlDeviceID, &pmmode);
 
 		// The following function may be utilized to handle errors as needed.
-		getNVMLError(nvmlResult);
+		//getNVMLError(nvmlResult);
 
 		// Check if power management mode is enabled.
-		if (pmmode == NVML_FEATURE_ENABLED){
+		//if (pmmode == NVML_FEATURE_ENABLED){
 			// Get the power usage in milliWatts.
 			nvmlResult = nvmlDeviceGetPowerUsage(nvmlDeviceID, &powerLevel);
-		}
+		//}
         power = (double)powerLevel/1000.0;
         accenergy += power*dt;
 		// The output file stores power in Watts.
