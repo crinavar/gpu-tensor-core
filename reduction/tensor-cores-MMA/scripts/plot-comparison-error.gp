@@ -6,7 +6,7 @@ cpu  = ARG3
 
 print "plot-comparison-error.gp ---> GPU: ",gpu," dist: ",dist
 
-out     = 'plots/comparison-error-'.gpu.'_'.dist.'.eps'
+out     = 'plots/comparison-error-'.gpu.'-'.dist.'.eps'
 mytitle = "Error vs CUB Library (".gpu.")\n".dist." Distribution\n "
 
 set autoscale # scale axes automatically
@@ -14,11 +14,12 @@ set term postscript eps color blacktext "Courier" 18
 set output out
 set title mytitle font "Courier, 22"
 
-set ylabel 'Error %' rotate by 90 offset -0.2
-#set yrange [0.000001:0.003]
+set ylabel 'Error %' rotate by 90 offset -0.3
+set yrange [0.000001:0.003]
 set log y
 
 set xlabel 'n x 10^{6}'
+set xrange [0:108000000]
 set font "Courier, 20"
 set pointsize   1.0
 set xtics format "%1.0s"
@@ -41,4 +42,4 @@ ompDouble = 'data/alg-omp-double-'.cpu.'-'.dist.'-B32.dat'
 plot    singlepass  using 1:12 title "single-pass" with lp ls 1,\
         cub16       using 1:9 title "CUB (half)"  with lp ls 3,\
         cub32       using 1:9 title "CUB (float)" with p ls 2,\
-        ompDouble   using 1:12 title "OpenMP ".cpu."" with p ls 4
+        ompDouble   using 1:12 title "OpenMP (nt=10)" with p ls 4

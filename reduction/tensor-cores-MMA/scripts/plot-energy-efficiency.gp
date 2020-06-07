@@ -9,7 +9,7 @@ dist = ARG3
 
 print "plot-energy-efficiency.gp\n CPU = ",cpu,"\n GPU = ",gpu,"\n dist: ",dist
 out = 'plots/energy-efficiency-'.cpu.'-'.gpu.'-'.dist.'.eps'
-mytitle = "Energy Efficiency (".gpu." | ".cpu.")\nn = 400M, repeats = 1000"
+mytitle = "Energy Efficiency (".gpu.")\nn = 400M, repeats = 1000"
 
 set autoscale                        # scale axes automatically
 set term postscript eps color blacktext "Courier" 20

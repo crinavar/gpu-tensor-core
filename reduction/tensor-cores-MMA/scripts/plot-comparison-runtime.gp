@@ -22,7 +22,9 @@ set yrange [0.01:12.0]
 set xrange [0:108000000]
 set y2range [0.01:12.0]
 set ytics mirror (0.01, 0.25, 0.5, 1, 10)
-set y2tics mirror (0.01, 0.25, 0.5, 1, 10)
+#unset ytics
+#set y2tics mirror (0.01, 0.25, 0.5, 1, 10)
+#set y2label 'Time [ms]' rotate by 90 offset 1
 
 set xlabel 'n x 10^{6}'
 set font "Courier, 20"
@@ -46,5 +48,5 @@ ompDouble = 'data/alg-omp-double-'.cpu.'-'.dist.'-B32.dat'
 
 plot    cub32       using 1:2 title "CUB (float)"    with lp ls 2,\
         cub16       using 1:2 title "CUB (half)"   with lp ls 3,\
-	    singlepass  using 1:5 title "single-pass"   with lp ls 1,\
-        ompDouble   using 1:5 title "OpenMP ".cpu."" with lp ls 4
+	    singlepass  using 1:5 title "Single-pass"   with lp ls 1,\
+        ompDouble   using 1:5 title "OpenMP (nt=10)" with lp ls 4

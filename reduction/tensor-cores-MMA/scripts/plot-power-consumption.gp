@@ -9,13 +9,13 @@ gpu  = ARG2
 dist = ARG3
 
 print "plot-power.gp\n CPU = ",cpu,"\n GPU = ",gpu,"\n dist: ",dist
-out = 'plots/power-'.cpu.'-'.gpu.'-'.dist.'.eps'
-mytitle = "Power Consumption (".gpu." | ".cpu.")\nn = 400M, repeats = 1000"
+out = 'plots/power-consumption-'.cpu.'-'.gpu.'-'.dist.'.eps'
+mytitle = "Power Consumption (".gpu.")\nn = 400M, repeats = 1000"
 
 set autoscale                        # scale axes automatically
-set term postscript eps color blacktext "Courier" 24
+set term postscript eps color blacktext "Courier" 18
 set output out
-set title mytitle
+set title mytitle font "Courier, 22"
 
 set ytics mirror
 set ylabel 'W' rotate by 0 offset 1
@@ -31,8 +31,8 @@ set pointsize   0.5
 set xtics (0.1, 1, 2, 5, 10, 20, 42)
 set key right top Left  font "Courier, 18"
 
-set style line 1 lt 1 lc rgb 'forest-green' dt "-.-"    pt 5    pi -6   lw 3 # green   
-set style line 2 lt 2 lc rgb 'black'        dt 1        pt 2    pi -6   lw 3 # orange
+set style line 1 lt 1 lc rgb 'forest-green' dt 1    pt 5    pi -6   lw 3 # green   
+set style line 2 lt 2 lc rgb 'black'        dt "--"        pt 2    pi -6   lw 3 # orange
 set style line 3 lt 3 lc rgb 'web-blue'     dt "."      pt 6    pi -6   lw 3 # blue
 set style line 4 lt 4 lc rgb 'red'          dt 5        pt 11   pi -6   lw 3 # purple
 
@@ -49,8 +49,8 @@ omp_data            = 'data/power-'.cpu.'-omp-nt10-double.dat'
 
 plot\
         cub16_data          using 6:2 title "CUB (half)"       with l   ls 3,\
-        cub32_data          using 6:2 title "CUB (float)"      with l   ls 1,\
-        omp_data            using 6:2 title "OpenMP nt=10"     with l   ls 4,\
-        single_pass_data    using 6:2 title "Single-pass"      with l   ls 2
+        cub32_data          using 6:2 title "CUB (float)"      with l   ls 2,\
+        omp_data            using 6:2 title "OpenMP (nt=10)"     with l   ls 4,\
+        single_pass_data    using 6:2 title "Single-pass"      with l   ls 1
 
 print "done!\n\n"

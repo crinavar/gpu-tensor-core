@@ -17,11 +17,12 @@ set title mytitle font "Courier, 20"
 set ylabel 'BEPS' rotate by 90 offset 0
 
 set xlabel 'n x 10^{6}'
+set xrange [0:108000000]
 set font "Courier, 20"
 set pointsize   1.0
 set xtics format "%1.0s"
 set key Left bot right reverse samplen 3.0 font "Courier,18" spacing 1.0 
-set key at 115000000, 30
+set key at 105000000, 30
 
 set style line 1 lt 1 lc rgb 'forest-green' dt 1    pt 5    pi -6   lw 2 # green   
 set style line 2 lt 2 lc rgb 'black'       dt 2    pt 2    pi -6   lw 2 # orange
@@ -36,7 +37,7 @@ cub16       = 'data/alg-CUB-FP16-'.gpu.'-'.dist.'.dat'
 cub32       = 'data/alg-CUB-FP32-'.gpu.'-'.dist.'.dat'
 ompDouble   = 'data/alg-omp-double-'.cpu.'-'.dist.'-B32.dat'
 
-plot    singlepass  using 1:($1/($5*1000000)) title "single-pass"     with lp ls 1,\
+plot    singlepass  using 1:($1/($5*1000000)) title "Single-pass"     with lp ls 1,\
         cub16       using 1:($1/($2*1000000)) title "CUB (half)"      with lp ls 3,\
         cub32       using 1:($1/($2*1000000)) title "CUB (float)"     with lp ls 2,\
-        ompDouble   using 1:($1/($5*1000000)) title "OpenMP ".cpu."" with lp ls 4
+        ompDouble   using 1:($1/($5*1000000)) title "OpenMP (nt=10)" with lp ls 4
