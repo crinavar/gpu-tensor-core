@@ -51,7 +51,9 @@
 #include <cub/util_allocator.cuh>
 #include <cub/device/device_reduce.cuh>
 
-#include "nvmlPower.hpp"
+#ifdef POWER
+    #include "nvmlPower.hpp"
+#endif
 #include "../../test/test_util.h"
 
 using namespace cub;
@@ -145,7 +147,7 @@ int main(int argc, char** argv){
     int repeat = atoi(argv[5]);
     int g_timing_iterations = repeat;
     // Initialize command line
-    printf("num items = %i\n", num_items);
+    //printf("num items = %i\n", num_items);
     CommandLineArgs args(argc, argv);
     g_verbose = args.CheckCmdLineFlag("v");
     args.GetCmdLineArgument("n", num_items);
