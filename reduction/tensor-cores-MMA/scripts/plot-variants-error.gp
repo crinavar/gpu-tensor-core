@@ -23,12 +23,14 @@ set ylabel 'Error %' rotate by 90 offset -0.3
 set xtic auto                          # set xtics automatically
 set ytic auto                          # set ytics automatically
 #set yrange [0:0.03]
+set xrange [0:107000000]
 set log y
 
 set xlabel 'n x 10^{6}'
 set font "Courier, 20"
-set pointsize   0.5
+set pointsize   1.0
 set xtics format "%1.0s"
+set ytics format "10^{%L}"
 set key right top font "Courier, 18"
 
 set style line 1 lt 1 lc rgb 'forest-green' dt 1    pt 5    pi -6   lw 2 # green   

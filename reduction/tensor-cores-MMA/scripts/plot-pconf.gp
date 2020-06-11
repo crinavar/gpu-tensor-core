@@ -19,7 +19,7 @@ set title title
 #set yrange [y1:y2]
 set ytics mirror
 set ylabel 'Time [ms]' rotate by 90 offset -1
-set xlabel '% of warp-shuffle'
+set xlabel 'Fraction of warp-shuffle'
 set font "Courier, 20"
 
 set key Left top left reverse samplen 3.0 font "Courier,18" spacing 1 
@@ -33,6 +33,6 @@ set style line 7 lt 1 lc rgb '#a2142f' pt 8  pi -6 lw 2 ps 1 # red
 
 set key left top Left font "Courier, 20"
 
-plot 'data/pconf-'.alg.'-'.gpu.'-'.dist.'-B512.dat'   using 4:5 title "B512"  with lines ls 1,\
-     'data/pconf-'.alg.'-'.gpu.'-'.dist.'-B1024.dat'  using 4:5 title "B1024" with lines ls 4
+plot 'data/pconf-'.alg.'-'.gpu.'-'.dist.'-B512.dat'   using 4:5 title "B512"  with lp ls 1,\
+     'data/pconf-'.alg.'-'.gpu.'-'.dist.'-B1024.dat'  using 4:5 title "B1024" with lp ls 4
 

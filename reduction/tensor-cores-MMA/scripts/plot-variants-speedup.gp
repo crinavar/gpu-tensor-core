@@ -26,7 +26,7 @@ set ytic auto                          # set ytics automatically
 
 set xlabel 'n x 10^{6}'
 set font "Courier, 20"
-set pointsize   0.5
+set pointsize   1.0
 set xtics format "%1.0s"
 set key right bot Left  font "Courier, 18"
 
@@ -49,4 +49,3 @@ split_data = '< paste data/alg-warpshuffle-'.gpu.'-'.dist.'-B1024.dat data/alg-s
 plot    recurrence_data using 1:($5/$17) title "v1-recurrence" with lp ls 3,\
         single_pass_data using 1:($5/$17) title "v2-single-pass" with lp ls 1,\
         split_data using 1:($5/$17) title "v3-split" with lp ls 4
-

@@ -1,6 +1,6 @@
 reset
 if (ARGC != 3){
-    print "run as : gnuplot -c  GPU-MODEL  CPU-MODEL DISTRIBUTION"
+    print "run as : gnuplot -c  CPU-MODEL GPU-MODEL DISTRIBUTION"
     exit
 }
 
@@ -37,10 +37,10 @@ set style line 3 lt 3 lc rgb 'web-blue'     dt "."      pt 6    pi -6   lw 3 # b
 set style line 4 lt 4 lc rgb 'red'          dt 5        pt 11   pi -6   lw 3 # purple
 
 # variables
-single_pass_data    = 'data/power-'.gpu.'-single-pass.dat'
-cub16_data          = 'data/power-'.gpu.'-CUB-half.dat'
-cub32_data          = 'data/power-'.gpu.'-CUB-float.dat'
-omp_data            = 'data/power-'.cpu.'-omp-nt10-double.dat'
+single_pass_data    = 'data/power-singlepass-'.gpu.'.dat'
+cub16_data          = 'data/power-CUB-half-'.gpu.'.dat'
+cub32_data          = 'data/power-CUB-float-'.gpu.'.dat'
+omp_data            = 'data/power-omp-nt10-double-'.cpu.'.dat'
 
 #print "warp_shuffle_data: ".warp_shuffle_data
 #print "split_data: ".split_data
@@ -50,7 +50,7 @@ omp_data            = 'data/power-'.cpu.'-omp-nt10-double.dat'
 plot\
         cub16_data          using 6:2 title "CUB (half)"       with l   ls 3,\
         cub32_data          using 6:2 title "CUB (float)"      with l   ls 2,\
-        omp_data            using 6:2 title "OpenMP (nt=10)"     with l   ls 4,\
+        omp_data            using 6:2 title "OpenMP (nt=10)"   with l   ls 4,\
         single_pass_data    using 6:2 title "Single-pass"      with l   ls 1
 
 print "done!\n\n"

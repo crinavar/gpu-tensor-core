@@ -27,7 +27,7 @@ set log y
 
 set xlabel 'n x 10^{6}'
 set font "Courier, 20"
-set pointsize   0.5
+set pointsize   1.0
 set xtics format "%1.0s"
 set key right bot Left  font "Courier, 18"
 

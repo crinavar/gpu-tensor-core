@@ -35,7 +35,7 @@ set key right top Left  font "Courier, 16"
 set style fill solid
 
 # variables
-data    = 'data/energy-efficiency.dat
+data    = 'data/energy-efficiency-'.gpu.'.dat'
 
 plot\
     data every 2 u 1:2 axes x1y1 with boxes title "Total Energy" ls 3,\
