@@ -56,7 +56,9 @@
 #include <cub/util_allocator.cuh>
 #include <cub/device/device_reduce.cuh>
 
-#include "nvmlPower.hpp"
+#ifdef POWER
+    #include "nvmlPower.hpp"
+#endif
 #include "../../test/test_util.h"
 //#include "../../test/half.h"
 
@@ -173,7 +175,7 @@ int main(int argc, char** argv){
     int g_timing_iterations = repeat;
 
 
-    printf("num items = %i\n", num_items);
+    //printf("num items = %i\n", num_items);
     //printf("%i\n",seed);
     cudaSetDevice(dev);
     // Initialize command line
