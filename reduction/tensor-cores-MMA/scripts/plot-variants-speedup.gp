@@ -39,8 +39,8 @@ set style line 6 lt 1 lc rgb '#4dbeee'              pt 4    pi -6   lw 2 # light
 set style line 7 lt 1 lc rgb '#a2142f'              pt 8    pi -6   lw 2 # red
 
 # variables
-recurrence_data = '< paste data/alg-warpshuffle-'.gpu.'-'.dist.'-B1024.dat data/alg-recurrence-'.gpu.'-'.dist.'-B32.dat'
-single_pass_data = '< paste data/alg-warpshuffle-'.gpu.'-'.dist.'-B1024.dat data/alg-singlepass-'.gpu.'-'.dist.'-B128.dat'
+recurrence_data = '< paste data/alg-warpshuffle-'.gpu.'-'.dist.'-B1024.dat data/alg-recurrence-'.gpu.'-'.dist.'-B128.dat'
+single_pass_data = '< paste data/alg-warpshuffle-'.gpu.'-'.dist.'-B1024.dat data/alg-singlepass-'.gpu.'-'.dist.'-B32.dat'
 split_data = '< paste data/alg-warpshuffle-'.gpu.'-'.dist.'-B1024.dat data/alg-split-'.gpu.'-'.dist.'-B512.dat'
 
 #print "recurrence_data: ".recurrence_data

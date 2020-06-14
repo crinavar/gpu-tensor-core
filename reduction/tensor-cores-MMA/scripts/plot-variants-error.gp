@@ -22,7 +22,7 @@ set ytics mirror
 set ylabel 'Error %' rotate by 90 offset -0.3
 set xtic auto                          # set xtics automatically
 set ytic auto                          # set ytics automatically
-#set yrange [0:0.03]
+set yrange [0.000001:0.05]
 set xrange [0:107000000]
 set log y
 

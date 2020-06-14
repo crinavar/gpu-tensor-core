@@ -41,7 +41,7 @@ set style line 7 lt 1 lc rgb '#a2142f'              pt 8    pi -6   lw 2 # red
 
 set key Left bot right reverse samplen 3.0 font "Courier,18" spacing 1 
 
-singlepass = 'data/alg-singlepass-'.gpu.'-'.dist.'-B128.dat'
+singlepass = 'data/alg-singlepass-'.gpu.'-'.dist.'-B32.dat'
 cub16 = 'data/alg-CUB-FP16-'.gpu.'-'.dist.'.dat'
 cub32 = 'data/alg-CUB-FP32-'.gpu.'-'.dist.'.dat'
 ompDouble = 'data/alg-omp-double-'.cpu.'-'.dist.'-B32.dat'

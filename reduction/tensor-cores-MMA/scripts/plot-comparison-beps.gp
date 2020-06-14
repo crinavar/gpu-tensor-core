@@ -32,7 +32,7 @@ set style line 5 lt 1 lc rgb '#77ac30'              pt 13   pi -6   lw 2 # green
 set style line 6 lt 1 lc rgb '#4dbeee'              pt 4    pi -6   lw 2 # light-blue
 set style line 7 lt 1 lc rgb '#a2142f'              pt 8    pi -6   lw 2 # red
 
-singlepass  = 'data/alg-singlepass-'.gpu.'-'.dist.'-B128.dat'
+singlepass  = 'data/alg-singlepass-'.gpu.'-'.dist.'-B32.dat'
 cub16       = 'data/alg-CUB-FP16-'.gpu.'-'.dist.'.dat'
 cub32       = 'data/alg-CUB-FP32-'.gpu.'-'.dist.'.dat'
 ompDouble   = 'data/alg-omp-double-'.cpu.'-'.dist.'-B32.dat'
